@@ -7,7 +7,7 @@ from pathlib import Path
 
 PAGE_ID = "c97d47abdd164fc7a26bd0e206132705"
 MARKER = "Flow 立項提案"
-VERSION = "BizPeak Flow 立項提案 v0.3"
+VERSION = "BizPeak Flow 立項提案 v0.4"
 SITE = "https://bizpeak-flow-proposal.vercel.app"
 REPO = "https://github.com/FunRaise-Team/bizpeak-flow"
 
@@ -90,10 +90,11 @@ b1 = [
     h1(VERSION),
     callout([rt("從報價單產生的那一刻、到收款與續約的完整閉環。", bold=True),
              rt("電子簽核、合約管理、催收自動化 — 公司工作流「主幹道」的第一段路、BizPeak 生態系第一個 Dogfooding 產品。")], icon="🎯"),
-    p(rt("發起人：Nelsen Chen（COO）｜文件：FR-BPF-2026-001 v0.3｜2026-07-02｜狀態："),
+    p(rt("發起人：Nelsen Chen（COO）｜文件：FR-BPF-2026-001 v0.4｜2026-07-02｜狀態："),
       rt("待拍板", bold=True, color="orange")),
     callout([rt("一頁式互動提案（對外可分享）：", bold=True), rt(SITE, link=SITE),
-             rt("　｜　協作程式庫："), rt("FunRaise-Team/bizpeak-flow", link=REPO), rt("（private、含完整規格四文件與研究）")], icon="🔗", color="gray_background"),
+             rt("　｜　協作程式庫："), rt("FunRaise-Team/bizpeak-flow", link=REPO), rt("（public、含完整規格文件與 POC）")], icon="🔗", color="gray_background"),
+    callout([rt("POC 已可動：", bold=True), rt("Notion 資料層四庫已建（", ), rt("POC 頁", link="https://www.notion.so/391b219245158137a95cc1d0f74f97e6"), rt("）、MCP 伺服器六個能力工具驗收通過 — 在 Claude 掛上 repo 的 poc/ 即可直接問「哪些款項逾期」。掛載指令見 poc/README.md。")], icon="🧪", color="green_background"),
     p(rt("敘事主軸：", bold=True), rt("從公司自身痛點出發、先在內部打通合約閉環、驗證後產品化 — 成為 BizPeak 生態系對外的第一個產品。")),
     divider(),
 
@@ -154,7 +155,32 @@ b2 = [
         ["2.0 AI 應用 × MCP", "在使用者慣用的 AI 聊天應用（Claude / GPT 等）、透過 Funraise MCP 把個人信箱檔案與公司合約系統接進同一場對話", "在外部 AI 助理完成跨系統操作（信箱回簽 → 合約歸檔）、不開我們的介面"],
     ]),
 
-    h1("⑦ 技術架構（技術棧與 RD 定案）"),
+    h1("⑦ 轉移與嵌入 — 不搬家、先接管"),
+    p(rt("導入原則：", bold=True), rt("信箱、Teams、報價單系統照用 — 系統把追蹤層疊在既有工具之上、只退役補洞用的表格與登記簿（Excel 逾期表 / 現金流表、紙本用印登記簿）；同仁自製小工具走四件套卡帶化。互動版雙態圖見線上提案第 7 節。")),
+    table(["工具", "去向", "資料怎麼搬"], [
+        ["Outlook 信箱", "照用 — 回簽識別代理自動讀", "回簽自動落合約庫、不用搬"],
+        ["Teams", "照用 — 通知與簽核卡片可直接操作", "操作記錄落事件庫"],
+        ["報價單系統", "照用 — 輸出直接建 C0", "報價資料自動帶入合約庫"],
+        ["NuEIP", "降為可選接口（簽核引擎自建）", "政策要求的流程走接口回寫"],
+        ["網銀・會計系統", "照用 — 入帳明細餵對帳代理", "實收結果回寫款項庫"],
+        ["Excel 逾期表／現金流表", "退役 — 看板與預測取代", "歷史資料一次性導入款項庫"],
+        ["用印登記簿", "退役 — 用印佇列取代", "掃描歸檔事件庫"],
+        ["同仁自製小工具", "卡帶化 — 四件套接入（L0 起步）", "資料契約登記卡帶註冊庫"],
+    ]),
+    p(rt("存量三步導入：", bold=True), rt("① AI 讀歷史合約與報價抽欄位建檔、人逐筆確認 ② 雙軌兩週（新案 100% 進系統、舊表凍結唯讀）③ 退役與卡帶化。詳 repo docs/MIGRATION.md（含各角色一天的變化、訪談確認清單）。")),
+
+    h1("⑧ Agentic 作業泳道 — 誰做、AI 做什麼、資料落在哪"),
+    p(rt("六條泳道：", bold=True), rt("客戶／同仁／AI 代理／平台規則／外部工具／Notion 資料層。互動版（可播放一張合約走完閉環）見線上提案第 8 節、以下為摘要：")),
+    table(["階段", "同仁（人審）", "AI 代理", "平台規則", "資料落庫"], [
+        ["報價 C0", "業務確認合作、產報價", "—", "建 C0、SLA 起算", "合約庫 +C0"],
+        ["簽核・用印 C1-C2", "Teams 卡片核准；行政用印", "—", "簽核路由＋SLA 監看", "事件庫留痕"],
+        ["寄出・回簽 C3-C4", "業務寄出", "回簽識別：判讀信件、抽欄位、通知財務", "C4 生效＋產全期款項排程", "合約庫 C4・款項庫 +N 期"],
+        ["開票・收款 C5", "財務開票、一鍵確認", "對帳比對 → 建議打勾", "P1 → P3", "款項庫 P3・事件庫"],
+        ["逾期・催收 P4", "業務按一下送催收信；主管接升級", "起草催收信＋風險預警", "催收梯級 D+3/7/30/60", "逾期標記・催收歷程"],
+        ["結案・續約 C6-C7", "拍板續約條件", "續約條件建議（依付款紀錄）", "前 60 天開續約窗口", "合約庫 +新約 C0 → 閉環"],
+    ]),
+
+    h1("⑨ 技術架構（技術棧與 RD 定案）"),
     p(rt("三件事是定案：", bold=True), rt("能力層先行（三種介面吃同一套能力）、Notion 為資料權威源、獨立平台應用（與業務儀表板互鏈）。四層：介面層（1.0／1.5／2.0）→ 能力層（函式＝REST＝MCP 工具、卡帶接入面）→ 平台服務（狀態機、自建簽核引擎、事件匯流排、通知、催收規則、代理執行環境、信任橋接）→ 資料層（Notion 權威源＋快取佇列層擋每秒 3 請求限流）。")),
     table(["路徑", "組合", "取捨"], [
         ["A・正式產品線", "公司雲慣例（GCP）：Cloud Run＋Cloud SQL／Firestore＋Cloud Scheduler＋Pub/Sub", "對齊 RD 維運能力、直接是商轉多租戶地基；起步比 B 慢數天"],
@@ -162,10 +188,10 @@ b2 = [
     ]),
     callout([rt("建議：", bold=True), rt("時程要求下週上線 — B 先行驗證流程、8 月 MCP 化時評估遷 A；RD 若評估可直上 A 更好。能力層與資料層走介面隔離、切換成本已控制。技術棧本週與 RD 定案。")], icon="✅", color="green_background"),
 
-    h1("⑧ 卡帶規範 — 先鋒計畫的出口"),
+    h1("⑩ 卡帶規範 — 先鋒計畫的出口"),
     p(rt("L0 私人（註冊即用）→ L1 團隊（四件套齊＋資料契約過檢）→ L2 全公司（安全檢查＋真實資料驗證、決策負責人拍板）。四件套：Manifest（有名有姓負責人、離職必轉移）｜資料契約（禁影子欄位）｜能力層（寫入經信任橋接）｜事件（卡帶間只透過事件說話）。")),
 
-    h1("⑨ 成功指標（建議、待拍板）"),
+    h1("⑪ 成功指標（建議、待拍板）"),
     table(["指標", "現況", "目標"], [
         ["收款追蹤覆蓋率", "帳外追蹤", "100%"],
         ["逾期浮現延遲", "月底結帳（最長 30 天）", "D+1"],
@@ -176,7 +202,7 @@ b2 = [
         ["先鋒卡帶接入", "—", "6 個月 ≥ 2 個"],
     ]),
 
-    h1("⑩ 執行路線圖 — 下週上線、七月 dogfooding、八月 MCP 化"),
+    h1("⑫ 執行路線圖 — 下週上線、七月 dogfooding、八月 MCP 化"),
     table(["波次", "時間", "內容", "關卡"], [
         ["本週", "07-02 – 07-05", "訪談（行政、財務）、RD 技術棧定案、Notion 資料庫建置", "第一張真實合約可建檔"],
         ["下週", "07-06 – 07-12", "體驗 1.0 核心閉環上線（合約追蹤＋收款佇列＋通知）", "真實合約 C0 起步、狀態全留痕"],
@@ -186,11 +212,11 @@ b2 = [
     ]),
     p(rt("進度以關卡為準；dogfooding 期間的規格修正優先於新功能。")),
 
-    h1("⑪ 團隊分工"),
+    h1("⑬ 團隊分工"),
     p(rt("Nelsen Chen（發起・COO）｜Philis Chen（業務總經理・流程定義）｜Allen Hung（主導搭建）｜Jaric Kuo（CTO・技術棧定案）｜Carol Liao（訪談協調）｜Ting・Glendy（關鍵使用者）｜RD × 2（下週進場、待定）。")),
 ]
 b3 = [
-    h1("⑫ 待拍板"),
+    h1("⑭ 待拍板"),
     numbered(rt("決策負責人與資源配置", bold=True), rt(" — Nelsen")),
     numbered(rt("「Flow」正式進 BizPeak 產品家族", bold=True), rt("（品牌定位已對齊品牌架構頁、剩命名確認）— Nelsen")),
     numbered(rt("NuEIP adapter 必要範圍", bold=True), rt("（簽核引擎已拍板自建）— 本週訪談")),
@@ -198,7 +224,7 @@ b3 = [
     numbered(rt("對外簽署升級時機", bold=True), rt("：電子郵件回簽 → DottedSign 數位簽章 — Philis × 法務")),
     numbered(rt("通知通道優先序", bold=True), rt("：Teams／電子郵件／LINE — 本週訪談")),
     numbered(rt("Token 用量與 RD 資源", bold=True), rt(" — Nelsen × Jaric")),
-    numbered(rt("repo 轉公開前的敏感內容清洗", bold=True), rt("（已推 FunRaise-Team private；研究檔含客戶名與應收款狀態）— Nelsen")),
+    numbered(rt("repo 已轉公開", bold=True), rt("（內部盤點研究已分流出版控、歷史重建、匿名可讀驗證通過）— 已結案"),),
     divider(),
     p(rt("附錄：", bold=True), rt("一頁式互動提案 "), rt(SITE, link=SITE),
       rt("｜程式庫 "), rt(REPO.replace("https://", ""), link=REPO),
@@ -223,6 +249,6 @@ for b in verify:
     if t == "heading_1" and txt: h1s.append(txt)
 print(f"\n驗證：頁面共 {len(verify)} 頂層塊、H1：")
 for x in h1s: print("  -", x)
-ok = any("v0.3" in x for x in h1s) and not any(("v0.1" in x or "v0.2" in x) for x in h1s)
-print(f"\nv0.3 存在且舊版已移除：{ok}｜合計 append {total} 塊")
+ok = any("v0.4" in x for x in h1s) and not any(("v0.1" in x or "v0.2" in x or "v0.3" in x) for x in h1s)
+print(f"\nv0.4 存在且舊版已移除：{ok}｜合計 append {total} 塊")
 sys.exit(0 if ok else 2)

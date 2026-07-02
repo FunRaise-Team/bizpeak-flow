@@ -269,6 +269,58 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
 .ask2.done .res{color:var(--ink);text-decoration:none;font-weight:500}
 @media(max-width:700px){.ask2{grid-template-columns:40px 1fr}.ask2 .own{text-align:left;grid-column:2}}
 
+/* ── 轉移雙態圖 ── */
+.mig-map{position:relative;border:1px solid var(--hair-2);background:#fff;height:480px;margin:30px 0 8px;overflow:hidden;}
+.mig-toggle{position:absolute;top:14px;left:14px;z-index:5;display:flex;gap:0;border:1px solid var(--ink);}
+.mig-toggle button{font-family:var(--sans);font-size:12.5px;font-weight:700;padding:7px 16px;border:none;background:#fff;cursor:pointer;color:var(--ink-2);}
+.mig-toggle button.on{background:var(--ink);color:var(--paper);}
+.mig-bands{position:absolute;inset:0;opacity:0;transition:opacity .9s ease;pointer-events:none;}
+.mig-bands.show{opacity:1;}
+.mig-bands .bandrow{position:absolute;left:0;right:0;border-top:1px dashed var(--hair-2);padding:4px 14px;}
+.mig-bands .bandrow span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink-3);}
+.mnode{position:absolute;transform:translate(-50%,-50%);border:1px solid var(--ink);background:#fff;padding:7px 12px;font-size:12px;font-weight:500;cursor:pointer;transition:left 1.1s cubic-bezier(.6,.05,.2,1),top 1.1s cubic-bezier(.6,.05,.2,1),opacity .8s,filter .8s;white-space:nowrap;font-family:var(--sans);}
+.mnode small{display:block;font-family:var(--mono);font-size:9px;color:var(--ink-3);font-weight:400;letter-spacing:.06em;}
+.mnode:hover{background:var(--accent-wash);}
+.mnode.center{background:var(--ink);color:var(--paper);font-weight:700;}
+.mnode.center small{color:var(--ink-3);}
+.mnode.platform{border-width:2px;border-color:var(--accent-bg);background:var(--accent-wash);font-weight:700;}
+.mnode.datanode{background:var(--accent-bg);border-color:var(--accent-bg);font-weight:900;}
+.mnode.dimmed{opacity:.42;filter:grayscale(.9);}
+.mnode.dimmed .nm2{text-decoration:line-through;}
+.mnode.ghost{opacity:0;pointer-events:none;}
+.mnode.ghost.showg{opacity:1;pointer-events:auto;}
+.mig-detail{border:1px solid var(--hair-2);border-top:none;padding:18px 22px;min-height:96px;background:#fff;margin-bottom:8px;}
+.mig-detail h4{font-size:14.5px;font-weight:700;margin-bottom:8px;}
+.mig-detail .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;font-size:13px;color:var(--ink-2);}
+.mig-detail .cols b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink-3);font-weight:500;margin-bottom:3px;}
+@media(max-width:800px){.mig-detail .cols{grid-template-columns:1fr;}.mig-map{height:560px;}}
+
+/* ── 泳道圖 ── */
+.lanes{border:1px solid var(--hair-2);background:#fff;margin:30px 0 8px;overflow-x:auto;}
+.lane-grid{display:grid;grid-template-columns:130px repeat(6,minmax(128px,1fr));min-width:940px;}
+.lg-corner{border-bottom:1px solid var(--ink);border-right:1px solid var(--hair);padding:10px 12px;}
+.lg-corner button{font-family:var(--sans);font-size:11.5px;font-weight:700;border:1px solid var(--ink);background:var(--accent-bg);padding:5px 10px;cursor:pointer;width:100%;}
+.lg-stage{border-bottom:1px solid var(--ink);border-right:1px solid var(--hair);padding:10px 10px;font-size:12px;font-weight:700;text-align:center;}
+.lg-stage small{display:block;font-family:var(--mono);font-size:9.5px;color:var(--ink-3);font-weight:400;margin-top:1px;}
+.lg-stage.lit{background:var(--accent-wash);}
+.lg-lane{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:10px 12px;font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.lg-lane .sw{width:8px;height:8px;flex:none;}
+.lg-lane small{display:block;font-family:var(--mono);font-size:9px;color:var(--ink-3);font-weight:400;}
+.lg-cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:8px;min-height:58px;position:relative;}
+.lnode{border:1px solid var(--hair-2);background:#FAFAF7;font-size:11px;line-height:1.45;padding:5px 8px;cursor:pointer;transition:all .25s;}
+.lnode:hover{border-color:var(--ink);}
+.lnode.lit{background:var(--accent-wash);border-color:var(--accent-bg);font-weight:500;}
+.lnode.human{border-left:3px solid var(--ink);}
+.lnode.ai2{border-left:3px solid var(--accent-bg);}
+.lnode.rule{border-left:3px solid #B9B9AE;}
+.lnode.dat{border-left:3px solid var(--accent);font-family:var(--mono);font-size:10px;}
+.lnode+.lnode{margin-top:6px;}
+.lane-row-data .lg-cell{background:#FFFDF4;}
+.loop-hint{grid-column:2/8;padding:8px 12px;font-family:var(--mono);font-size:10.5px;color:var(--accent);text-align:right;}
+.lane-detail{border:1px solid var(--hair-2);border-top:none;padding:16px 22px;min-height:76px;font-size:13px;background:#fff;margin-bottom:8px;}
+.lane-detail b{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--ink-3);font-weight:500;display:block;margin-bottom:4px;}
+.lane-detail .dwrite{font-family:var(--mono);font-size:11.5px;color:var(--accent);margin-top:6px;}
+
 .colophon{margin-top:80px;border-top:2px solid var(--ink);padding:28px 0 60px}
 .colophon .in2{display:flex;flex-wrap:wrap;gap:12px 48px;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);letter-spacing:.03em}
 .colophon .in2 b{color:var(--ink);font-weight:500}
@@ -284,7 +336,7 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
 <div class="topbar">
   <div class="in">
     <img src="assets/funraise-logo.png" alt="FUNRAISE 方睿科技">
-    <span class="doc">FR-BPF-2026-001 · v0.3</span>
+    <span class="doc">FR-BPF-2026-001 · v0.4</span>
     <span class="now">§ <b id="curCh">0</b> <span id="curTitle">封面</span></span>
   </div>
 </div>
@@ -312,12 +364,14 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
     <li><a href="#s4"><span class="n">4</span><span class="t">三入口</span></a></li>
     <li><a href="#s5"><span class="n">5</span><span class="t">Agentic 差異化</span></a></li>
     <li><a href="#s6"><span class="n">6</span><span class="t">三階段體驗</span></a></li>
-    <li><a href="#s7"><span class="n">7</span><span class="t">技術架構</span></a></li>
-    <li><a href="#s8"><span class="n">8</span><span class="t">卡帶規範</span></a></li>
-    <li><a href="#s9"><span class="n">9</span><span class="t">成功指標</span></a></li>
-    <li><a href="#s10"><span class="n">10</span><span class="t">執行路線圖</span></a></li>
-    <li><a href="#s11"><span class="n">11</span><span class="t">團隊分工</span></a></li>
-    <li><a href="#s12"><span class="n">12</span><span class="t">待拍板</span></a></li>
+    <li><a href="#s13"><span class="n">7</span><span class="t">轉移與嵌入</span></a></li>
+    <li><a href="#s14"><span class="n">8</span><span class="t">Agentic 作業泳道</span></a></li>
+    <li><a href="#s7"><span class="n">9</span><span class="t">技術架構</span></a></li>
+    <li><a href="#s8"><span class="n">10</span><span class="t">卡帶規範</span></a></li>
+    <li><a href="#s9"><span class="n">11</span><span class="t">成功指標</span></a></li>
+    <li><a href="#s10"><span class="n">12</span><span class="t">執行路線圖</span></a></li>
+    <li><a href="#s11"><span class="n">13</span><span class="t">團隊分工</span></a></li>
+    <li><a href="#s12"><span class="n">14</span><span class="t">待拍板</span></a></li>
   </ol>
 </nav>
 
@@ -588,8 +642,121 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
   </div>
 </section>
 
+<section class="ch" id="s13">
+  <div class="ch-head"><span class="num">7</span><h2>轉移與嵌入</h2><span class="sub">不搬家、先接管 — 大家的工具照用、系統疊在上面</span></div>
+  <div class="prose">
+    <p><span class="lead-in">導入失敗的第一名原因是要求大家換工具。</span>BizPeak Flow 反過來：信箱照用、Teams 照用、報價單系統照用 — 系統把追蹤層疊在既有工具之上、只退役那些本來就是「補洞用」的表格與登記簿。點下面的切換、看同一批工具怎麼從「全部連到人」歸位成三層架構：</p>
+  </div>
+  <div class="mig-map" id="migMap">
+    <div class="mig-toggle">
+      <button class="on" data-m="now">現況 — 工具連到人</button>
+      <button data-m="future">未來 — 工具連到系統</button>
+    </div>
+    <div class="mig-bands" id="migBands">
+      <div class="bandrow" style="top:3%"><span>照用 — 系統嵌入</span></div>
+      <div class="bandrow" style="top:29%"><span>平台 — BIZPEAK FLOW</span></div>
+      <div class="bandrow" style="top:56%"><span>資料 — 唯一真相來源</span></div>
+      <div class="bandrow" style="top:79%"><span>退役・卡帶化</span></div>
+    </div>
+  </div>
+  <div class="mig-detail" id="migDetail"><h4>點任一工具、看它的現在與未來</h4><div class="cols"><div><b>現在</b>—</div><div><b>未來</b>—</div><div><b>資料去哪</b>—</div></div></div>
+  <table class="t" style="max-width:1000px">
+    <caption><span class="fn">表 5</span>工具去留判定（現用軟體以本週訪談最終確認）</caption>
+    <thead><tr><th>工具</th><th>現況角色</th><th>去向</th><th>資料怎麼搬</th></tr></thead>
+    <tbody>
+      <tr><td><b>Outlook 信箱</b></td><td>回簽與往來信件、靠人看到</td><td>照用 — 回簽識別代理自動讀</td><td>回簽檔案自動落合約庫、不用搬</td></tr>
+      <tr><td><b>Teams</b></td><td>口頭轉達與訊息</td><td>照用 — 通知與簽核卡片進來、可直接操作</td><td>操作記錄落事件庫</td></tr>
+      <tr><td><b>報價單系統</b></td><td>產出後斷鏈</td><td>照用 — 輸出直接建 C0</td><td>報價資料自動帶入合約庫</td></tr>
+      <tr><td><b>NuEIP</b></td><td>內部簽核</td><td>降為可選接口 — 簽核引擎自建</td><td>政策要求的流程走接口回寫</td></tr>
+      <tr><td><b>網銀・會計系統</b></td><td>財務逐筆對明細</td><td>照用 — 入帳明細餵對帳代理</td><td>實收結果回寫款項庫</td></tr>
+      <tr><td><b>Excel 逾期表</b></td><td>月底結帳才更新</td><td>退役 — 逾期看板取代</td><td>歷史資料一次性導入款項庫</td></tr>
+      <tr><td><b>Excel 現金流表</b></td><td>手動彙整預計付款</td><td>退役 — 款項庫彙總自動產出</td><td>歷史資料一次性導入</td></tr>
+      <tr><td><b>用印登記簿</b></td><td>紙本登記、不可查</td><td>退役 — 用印佇列取代</td><td>掃描歸檔事件庫</td></tr>
+      <tr><td><b>同仁自製小工具</b></td><td>各自為政、格式不一</td><td>卡帶化 — 過四件套接入（L0 起步）</td><td>資料契約登記卡帶註冊庫</td></tr>
+    </tbody>
+  </table>
+  <div class="prose">
+    <p class="tight"><span class="lead-in">存量資料三步導入、雙軌不斷線：</span></p>
+  </div>
+  <div class="ladder" style="max-width:900px">
+    <div class="r"><span class="d">第一步・存量導入</span><p>AI 讀歷史合約與報價（檔案、信件）、抽取欄位建檔、人逐筆確認 — 半自動、不用任何人手動謄打</p></div>
+    <div class="r"><span class="d">第二步・雙軌兩週</span><p>新案 100% 進系統、進行中舊案跑完或搬入；既有表格凍結為唯讀、當對照組</p></div>
+    <div class="r"><span class="d">第三步・退役與卡帶化</span><p>訪談確認無遺漏後、舊表退場；個人小工具走 L0 卡帶註冊、好用的升級 L1</p></div>
+  </div>
+</section>
+
+<section class="ch" id="s14">
+  <div class="ch-head"><span class="num">8</span><h2>Agentic 作業泳道</h2><span class="sub">誰做、AI 做什麼、規則管什麼、資料落在哪 — 一張圖</span></div>
+  <div class="prose">
+    <p><span class="lead-in">未來的一張合約這樣走完一生。</span>六條泳道：客戶與同仁只出現在必要的節點；AI 代理做準備與追蹤；平台規則守狀態機與時限；每一步的資料都落回同一個 Notion 資料層（底部黃色泳道）— 這就是閉環。按「跑一張合約」看它從報價走到續約：</p>
+  </div>
+  <div class="lanes">
+    <div class="lane-grid" id="laneGrid">
+      <div class="lg-corner"><button id="laneRun">▶ 跑一張合約</button></div>
+      <div class="lg-stage" data-st="1">報價<small>C0</small></div>
+      <div class="lg-stage" data-st="2">簽核・用印<small>C1–C2</small></div>
+      <div class="lg-stage" data-st="3">寄出・回簽<small>C3–C4</small></div>
+      <div class="lg-stage" data-st="4">開票・收款<small>C5</small></div>
+      <div class="lg-stage" data-st="5">逾期・催收<small>P4</small></div>
+      <div class="lg-stage" data-st="6">結案・續約<small>C6–C7</small></div>
+
+      <div class="lg-lane"><span class="sw" style="background:#B9B9AE"></span>客戶</div>
+      <div class="lg-cell" data-st="1"></div>
+      <div class="lg-cell" data-st="2"></div>
+      <div class="lg-cell" data-st="3"><div class="lnode" data-d="客戶簽回報價單、寄到公司統一信箱 — 客戶端流程零改變" data-w="—">回簽 → 統一信箱</div></div>
+      <div class="lg-cell" data-st="4"><div class="lnode" data-d="客戶依合約付款至公司帳戶" data-w="—">付款</div></div>
+      <div class="lg-cell" data-st="5"></div>
+      <div class="lg-cell" data-st="6"></div>
+
+      <div class="lg-lane"><span class="sw" style="background:var(--ink)"></span>同仁<small>業務・行政・財務</small></div>
+      <div class="lg-cell" data-st="1"><div class="lnode human" data-d="業務與客戶確認合作（信件為基準）、用報價單系統產出報價" data-w="合約庫：新增 C0 草稿">業務確認合作・產報價</div></div>
+      <div class="lg-cell" data-st="2"><div class="lnode human" data-d="簽核鏈在 Teams 卡片上直接核准或退回（附意見）；行政依用印佇列用印" data-w="事件庫：每一步簽核留痕">簽核鏈核准・行政用印</div></div>
+      <div class="lg-cell" data-st="3"><div class="lnode human" data-d="業務把用印完成的報價單寄給客戶 — 之後就不用「記得追」、系統會追" data-w="事件庫：寄出留痕">業務寄出</div></div>
+      <div class="lg-cell" data-st="4"><div class="lnode human" data-d="財務開發票；對帳代理比對入帳後、財務對「建議打勾」清單一鍵確認（人審）" data-w="款項庫：P1 → P3・實收日">財務開票・一鍵確認</div></div>
+      <div class="lg-cell" data-st="5"><div class="lnode human" data-d="催收信已由代理起草好、業務看一眼按送出（對外信件必經人審）；D+30 起 BU 主管接手升級決策" data-w="事件庫：催收動作留痕">業務送催收信</div></div>
+      <div class="lg-cell" data-st="6"><div class="lnode human" data-d="人只做一個決定：續約條件要不要調 — 其餘系統備好" data-w="合約庫：新約 C0">拍板續約條件</div></div>
+
+      <div class="lg-lane"><span class="sw" style="background:var(--accent-bg)"></span>AI 代理</div>
+      <div class="lg-cell" data-st="1"></div>
+      <div class="lg-cell" data-st="2"></div>
+      <div class="lg-cell" data-st="3"><div class="lnode ai2" data-d="回簽識別代理：判讀進信屬於哪張合約、抽取預計付款日與金額、自動落檔並通知財務（5 分鐘內）— 有疑義才找人" data-w="合約庫：C4・款項庫：+付款排程">回簽識別・抽取欄位</div></div>
+      <div class="lg-cell" data-st="4"><div class="lnode ai2" data-d="對帳代理：銀行入帳明細與款項排程自動比對、產生「建議打勾」清單給財務" data-w="款項庫：待確認標記">對帳比對 → 建議打勾</div></div>
+      <div class="lg-cell" data-st="5"><div class="lnode ai2" data-d="催收代理：依客戶分群起草催收信、附合約與逾期上下文；風險代理：依付款行為預警高風險客戶" data-w="事件庫：草稿與預警留痕">起草催收信・風險預警</div></div>
+      <div class="lg-cell" data-st="6"><div class="lnode ai2" data-d="依這張合約的實際付款紀錄、建議續約條件（例：3 期改 2 期）" data-w="—">續約條件建議</div></div>
+
+      <div class="lg-lane"><span class="sw" style="background:#B9B9AE"></span>平台規則<small>狀態機・SLA</small></div>
+      <div class="lg-cell" data-st="1"><div class="lnode rule" data-d="狀態機建 C0、SLA 起算 — 從這一刻起每一步被追蹤" data-w="事件庫：狀態轉移">建 C0・SLA 起算</div></div>
+      <div class="lg-cell" data-st="2"><div class="lnode rule" data-d="簽核引擎依金額與事業群路由簽核鏈；卡關超過 SLA 自動提醒；完成自動排入用印佇列" data-w="事件庫：C1 → C2">簽核路由・SLA 監看</div></div>
+      <div class="lg-cell" data-st="3"><div class="lnode rule" data-d="回簽確認 → C4 生效、自動產生全部期數的款項排程 — 現金流量預測即時更新" data-w="款項庫：P0 排程 × N 期">C3 → C4・產款項排程</div></div>
+      <div class="lg-cell" data-st="4"><div class="lnode rule" data-d="收款確認 → P3；當期全清 → 判斷是否結案" data-w="款項庫：P3">P1 → P3</div></div>
+      <div class="lg-cell" data-st="5"><div class="lnode rule" data-d="催收梯級：D+3 提醒業務 → D+7 起草催收信 → D+30 升級主管 → D+60–90 強制升級決策" data-w="款項庫：P4・事件庫">催收梯級 D+3/7/30/60</div></div>
+      <div class="lg-cell" data-st="6"><div class="lnode rule" data-d="到期前 60／30 天自動開續約窗口、通知業務與主管 — 零漏網" data-w="事件庫：窗口開啟">續約窗口（前 60 天）</div></div>
+
+      <div class="lg-lane"><span class="sw" style="background:#B9B9AE"></span>外部工具</div>
+      <div class="lg-cell" data-st="1"><div class="lnode" data-d="既有報價單系統照用、輸出自動接入" data-w="—">報價單系統</div></div>
+      <div class="lg-cell" data-st="2"><div class="lnode" data-d="簽核卡片直接出現在 Teams、不用開系統" data-w="—">Teams 卡片</div></div>
+      <div class="lg-cell" data-st="3"><div class="lnode" data-d="客戶回簽進統一信箱、代理輪詢讀取" data-w="—">統一信箱</div></div>
+      <div class="lg-cell" data-st="4"><div class="lnode" data-d="發票由會計系統開立、入帳明細來自網銀" data-w="—">會計系統・網銀</div></div>
+      <div class="lg-cell" data-st="5"><div class="lnode" data-d="催收與升級通知進 Teams、卡片可直接操作" data-w="—">Teams 通知</div></div>
+      <div class="lg-cell" data-st="6"><div class="lnode" data-d="續約提醒進 Teams" data-w="—">Teams 提醒</div></div>
+
+      <div class="lg-lane lane-row-data"><span class="sw" style="background:var(--accent-bg)"></span>Notion 資料層<small>唯一真相來源</small></div>
+      <div class="lg-cell lane-row-data" data-st="1"><div class="lnode dat" data-d="所有寫入經信任橋接、不可繞過" data-w="合約庫">合約庫 +C0</div></div>
+      <div class="lg-cell lane-row-data" data-st="2"><div class="lnode dat" data-d="簽核每一步：誰、何時、意見" data-w="事件庫">事件庫 留痕</div></div>
+      <div class="lg-cell lane-row-data" data-st="3"><div class="lnode dat" data-d="回簽檔案存證 + 全期款項排程建立" data-w="合約庫・款項庫">合約庫 C4・款項庫 +N 期</div></div>
+      <div class="lg-cell lane-row-data" data-st="4"><div class="lnode dat" data-d="實收日與確認人留痕" data-w="款項庫・事件庫">款項庫 P3</div></div>
+      <div class="lg-cell lane-row-data" data-st="5"><div class="lnode dat" data-d="逾期標記與催收歷程" data-w="款項庫・事件庫">逾期標記・催收歷程</div></div>
+      <div class="lg-cell lane-row-data" data-st="6"><div class="lnode dat" data-d="新約建檔 — 回到階段 1、閉環完成" data-w="合約庫">合約庫 +新約 C0</div></div>
+
+      <div class="lg-lane" style="border-bottom:none"></div>
+      <div class="loop-hint" id="loopHint">⟲ 續約開新約 — 回到「報價」、閉環完成；每一步的資料都在同一個資料層</div>
+    </div>
+  </div>
+  <div class="lane-detail" id="laneDetail"><b>點任一節點看細節</b>四類要素：深色邊 = 同仁動作（必經人審的節點）｜黃邊 = AI 代理｜灰邊 = 平台規則與工具｜黃底等寬 = 資料落庫</div>
+</section>
+
 <section class="ch" id="s7">
-  <div class="ch-head"><span class="num">7</span><h2>技術架構<span class="rd-flag">技術棧與 RD 定案</span></h2><span class="sub">分層是定案、選型是建議</span></div>
+  <div class="ch-head"><span class="num">9</span><h2>技術架構<span class="rd-flag">技術棧與 RD 定案</span></h2><span class="sub">分層是定案、選型是建議</span></div>
   <div class="prose">
     <p>三件事是定案：<b>能力層先行</b>（三種介面吃同一套能力）、<b>Notion 為資料權威源</b>（憲法一）、<b>獨立平台應用</b>（與業務儀表板互鏈、主幹道要長期承載卡帶與對外產品化、必須獨立）。具體技術棧為建議、開發啟動前與 RD 團隊定案。</p>
   </div>
@@ -613,7 +780,7 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
   </div>
   <div class="arch-note"><span class="fn">圖 5</span>系統分層 — 分層為定案、方框內的實作技術與 RD 定案。</div>
   <table class="t" style="max-width:1000px">
-    <caption><span class="fn">表 5</span>技術棧建議（兩條路、開發前與 RD 定案）</caption>
+    <caption><span class="fn">表 6</span>技術棧建議（兩條路、開發前與 RD 定案）</caption>
     <thead><tr><th>路徑</th><th>組合</th><th>取捨</th></tr></thead>
     <tbody>
       <tr><td><b>A · 正式產品線</b></td><td>公司雲慣例（GCP）：Cloud Run + Cloud SQL / Firestore + Cloud Scheduler + Pub/Sub</td><td>對齊 RD 既有維運能力、直接是商轉多租戶的地基；起步比 B 慢數天</td></tr>
@@ -633,12 +800,12 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
 </section>
 
 <section class="ch" id="s8">
-  <div class="ch-head"><span class="num">8</span><h2>卡帶規範</h2><span class="sub">同仁的工具有軌道可接、也有關卡把守</span></div>
+  <div class="ch-head"><span class="num">10</span><h2>卡帶規範</h2><span class="sub">同仁的工具有軌道可接、也有關卡把守</span></div>
   <div class="prose">
     <p><span class="lead-in">同仁自己做（L0）、團隊覺得好用（L1）、公司採納（L2）。</span>每級有明確驗收 — 做得好的工具從此接得進來。主機提供資料層、狀態機、簽核、事件、通知、三介面接入；卡帶只帶自己的業務邏輯。</p>
   </div>
   <table class="t" style="max-width:960px">
-    <caption><span class="fn">表 6</span>三級接入制</caption>
+    <caption><span class="fn">表 7</span>三級接入制</caption>
     <thead><tr><th>等級</th><th>誰能用</th><th>接入要求</th><th>審查</th></tr></thead>
     <tbody>
       <tr><td class="mono">L0</td><td>開發者本人</td><td>Manifest + 不碰共用資料寫入</td><td>免審、註冊即用</td></tr>
@@ -647,7 +814,7 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
     </tbody>
   </table>
   <table class="t" style="max-width:960px">
-    <caption><span class="fn">表 7</span>四件套接入契約（缺一不上主幹道）</caption>
+    <caption><span class="fn">表 8</span>四件套接入契約（缺一不上主幹道）</caption>
     <thead><tr><th>件</th><th>內容</th><th>解掉什麼</th></tr></thead>
     <tbody>
       <tr><td class="mono">①</td><td><b>Manifest</b> — 名稱、有名有姓的負責人（離職必轉移）、等級、用到的資料、暴露的能力</td><td>全公司可查的戶口名簿</td></tr>
@@ -659,9 +826,9 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
 </section>
 
 <section class="ch" id="s9">
-  <div class="ch-head"><span class="num">9</span><h2>成功指標</h2><span class="sub">建議版、待拍板</span></div>
+  <div class="ch-head"><span class="num">11</span><h2>成功指標</h2><span class="sub">建議版、待拍板</span></div>
   <table class="t" style="max-width:960px">
-    <caption><span class="fn">表 8</span>驗收指標 — 沒有指標、就無法判斷該擴張還是收</caption>
+    <caption><span class="fn">表 9</span>驗收指標 — 沒有指標、就無法判斷該擴張還是收</caption>
     <thead><tr><th>指標</th><th>現況</th><th>目標</th></tr></thead>
     <tbody>
       <tr><td>收款追蹤覆蓋率</td><td>帳外追蹤、無系統</td><td class="mono"><b>100%</b>（每張發票在系統有狀態）</td></tr>
@@ -676,7 +843,7 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
 </section>
 
 <section class="ch" id="s10">
-  <div class="ch-head"><span class="num">10</span><h2>執行路線圖</h2><span class="sub">下週上線、七月 dogfooding、八月 MCP 化</span></div>
+  <div class="ch-head"><span class="num">12</span><h2>執行路線圖</h2><span class="sub">下週上線、七月 dogfooding、八月 MCP 化</span></div>
   <div class="waves" style="max-width:1000px">
     <div class="wv"><span class="wn">本週</span><span class="wt">07-02 – 07-05</span><div><h3>規格定稿、架構定案</h3><p>使用者訪談（行政、財務）、RD 技術棧定案、Notion 資料庫建置。</p><div class="gate2"><b>關卡</b>第一張真實合約可建檔</div></div></div>
     <div class="wv"><span class="wn">下週</span><span class="wt">07-06 – 07-12</span><div><h3>體驗 1.0 核心閉環上線</h3><p>合約追蹤、收款佇列、通知矩陣 — 最小可用版直接上、真實合約開始在系統裡跑。</p><div class="gate2"><b>關卡</b>真實合約 C0 起步、狀態全留痕</div></div></div>
@@ -688,9 +855,9 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
 </section>
 
 <section class="ch" id="s11">
-  <div class="ch-head"><span class="num">11</span><h2>團隊分工</h2><span class="sub">依立項會議 · 兩位 RD 下週進場（人選待定）</span></div>
+  <div class="ch-head"><span class="num">13</span><h2>團隊分工</h2><span class="sub">依立項會議 · 兩位 RD 下週進場（人選待定）</span></div>
   <table class="t" style="max-width:860px">
-    <caption><span class="fn">表 9</span>協作分工</caption>
+    <caption><span class="fn">表 10</span>協作分工</caption>
     <thead><tr><th>成員</th><th>角色</th></tr></thead>
     <tbody>
       <tr><td><b>Nelsen Chen</b></td><td>發起人 · COO — 方向與資源</td></tr>
@@ -705,7 +872,7 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
 </section>
 
 <section class="ch" id="s12">
-  <div class="ch-head"><span class="num">12</span><h2>待拍板</h2><span class="sub">提案通過前需要定案的事 — 其餘都可以先動</span></div>
+  <div class="ch-head"><span class="num">14</span><h2>待拍板</h2><span class="sub">提案通過前需要定案的事 — 其餘都可以先動</span></div>
   <div class="asks2">
     <div class="ask2"><div><b>決策負責人與資源配置</b><p>主幹道平台層的最終拍板人。</p></div><span class="own">Nelsen</span></div>
     <div class="ask2 done"><div><b>「BizPeak」品牌定位</b><p class="res">已對齊品牌架構 — 剩確認：「Flow」正式進 BizPeak 產品家族（現列 Call / Chat / Studio、名稱 TBC）。</p></div><span class="own">Nelsen</span></div>
@@ -720,7 +887,7 @@ details.alt .ab{padding:0 0 16px 22px;font-size:13.5px;color:var(--ink-2)}
 <footer class="colophon">
   <div class="in2">
     <span>文件 <b>FR-BPF-2026-001</b></span>
-    <span>版本 <b>v0.3</b></span>
+    <span>版本 <b>v0.4</b></span>
     <span>日期 <b>2026-07-02</b></span>
     <span>起草 <b>Nelsen Chen · COO</b></span>
     <span>依據 <b>立項會議決策 · 內部流程盤點 · 外部研究</b></span>
@@ -809,12 +976,105 @@ document.getElementById("replayBtn").onclick=playDemo;
 const demoIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){playDemo();demoIO.unobserve(e.target)}})},{threshold:.35});
 demoIO.observe(document.getElementById("demo15"));
 
+
+/* 轉移雙態圖 — 同一批節點、雙座標滑動歸位 */
+const MIG=[
+ {id:"person", nm:"人", sub:"所有流程的中繼站", cls:"center", c:[47,50], o:[84,42],
+  now:"所有流程的中繼站 — 回簽有沒有到、款收了沒、什麼時候該續約、每一棒都靠人記得。", fut:"只負責拍板 — 簽核、送催收信、續約條件、收款確認。系統把事情做到剩最後一個決定。", data:"每次拍板落事件庫（誰、何時、決定了什麼）"},
+ {id:"outlook", nm:"Outlook 信箱", sub:"回簽・往來信", c:[16,20], o:[13,13],
+  now:"客戶回簽埋在信件裡、靠有人看到、轉給財務。", fut:"照用 — 回簽識別代理自動判讀進信、抽取欄位、5 分鐘內通知財務。", data:"回簽檔案落合約庫、付款排程落款項庫"},
+ {id:"teams", nm:"Teams", sub:"協作・通知", c:[74,16], o:[30,13],
+  now:"口頭轉達與訊息、事後追不到誰說過什麼。", fut:"照用 — 通知與簽核卡片進 Teams、卡片上直接核准或升級。", data:"每次操作落事件庫"},
+ {id:"quote", nm:"報價單系統", sub:"既有工具", c:[30,76], o:[47,13],
+  now:"報價單產出之後就斷鏈、後續全靠人工接力。", fut:"照用 — 輸出直接建立 C0 草稿、從第一步就進追蹤。", data:"報價資料自動帶入合約庫"},
+ {id:"bank", nm:"網銀・會計系統", sub:"發票・入帳", c:[64,84], o:[64,13],
+  now:"財務看銀行明細逐筆對、月底結帳才知道全貌。", fut:"照用 — 入帳明細餵對帳代理、產生建議打勾清單。", data:"實收結果回寫款項庫"},
+ {id:"nueip", nm:"NuEIP", sub:"內部簽核", c:[84,62], o:[81,13],
+  now:"簽核狀態要另外登入查、與合約追蹤脫節。", fut:"降為可選接口 — 簽核引擎自建、政策要求的流程走接口回接。", data:"簽核歷程落事件庫"},
+ {id:"xls1", nm:"Excel 逾期表", sub:"補洞用", c:[13,55], o:[16,88], dim:true,
+  now:"月底結帳才更新、平時是 30 天的盲區。", fut:"退役 — 逾期看板即時取代、逾期第一天就浮現。", data:"歷史資料一次性導入款項庫"},
+ {id:"xls2", nm:"Excel 現金流表", sub:"手動彙整", c:[35,30], o:[40,88], dim:true,
+  now:"手動彙整預計付款日與金額、更新即過期。", fut:"退役 — 款項庫彙總自動產出現金流量預測。", data:"歷史資料一次性導入款項庫"},
+ {id:"stamp", nm:"用印登記簿", sub:"紙本", c:[86,34], o:[62,88], dim:true,
+  now:"紙本登記、用印到哪一關不可查。", fut:"退役 — 用印佇列取代、行政入口一眼看今天要蓋的件。", data:"登記歷史掃描歸檔事件庫"},
+ {id:"tools", nm:"同仁自製小工具", sub:"點狀", c:[56,28], o:[84,88],
+  now:"各自為政、資料格式不一致、串不成流程。", fut:"卡帶化 — 過四件套契約接上主幹道（L0 註冊起步、好用的升 L1）。", data:"資料契約登記卡帶註冊庫"},
+ {id:"flow", nm:"BizPeak Flow", sub:"三入口＋聊天框", cls:"platform", ghost:true, c:[40,42], o:[33,42],
+  now:"—（尚未存在）", fut:"平台本體 — 三入口、聊天框、之後的 MCP、全吃同一個能力層。", data:"讀寫合約庫・款項庫・事件庫（經信任橋接）"},
+ {id:"mcpn", nm:"Funraise MCP", sub:"AI 助理接口", cls:"platform", ghost:true, c:[60,42], o:[58,42],
+  now:"—（尚未存在）", fut:"在慣用 AI 助理裡問與辦 — 8 月能力層 1:1 映射完成。", data:"同一能力層、同一資料庫"},
+ {id:"notionA", nm:"Notion", sub:"目前：客戶名單", cls:"datanode", c:[20,88], o:[47,68],
+  now:"只有客戶名單一份共用資料、其餘散在各工具。", fut:"唯一真相來源 — 合約・款項・事件・卡帶註冊四庫（憲法一）。", data:"一切寫入都回到這裡"},
+];
+const migMap=document.getElementById("migMap"),migDetail=document.getElementById("migDetail");
+MIG.forEach(n=>{
+  const el=document.createElement("div");
+  el.className="mnode "+(n.cls||"")+(n.ghost?" ghost":"");
+  el.id="mn-"+n.id;
+  el.innerHTML=`<span class="nm2">${n.nm}</span><small>${n.sub}</small>`;
+  el.onclick=()=>{migDetail.innerHTML=`<h4>${n.nm}</h4><div class="cols"><div><b>現在</b>${n.now}</div><div><b>未來</b>${n.fut}</div><div><b>資料去哪</b>${n.data}</div></div>`;};
+  migMap.appendChild(el);
+});
+function migPlace(state){
+  MIG.forEach(n=>{
+    const el=document.getElementById("mn-"+n.id);
+    const xy=state==="now"?n.c:n.o;
+    el.style.left=xy[0]+"%";el.style.top=xy[1]+"%";
+    el.classList.toggle("dimmed",state==="future"&&!!n.dim);
+    el.classList.toggle("showg",state==="future"&&!!n.ghost);
+  });
+  document.getElementById("migBands").classList.toggle("show",state==="future");
+}
+migPlace("now");
+document.querySelectorAll(".mig-toggle button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll(".mig-toggle button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");migPlace(b.dataset.m);
+  };
+});
+const migIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){
+  setTimeout(()=>{document.querySelector('.mig-toggle button[data-m="future"]').click();},1600);
+  migIO.unobserve(e.target);}})},{threshold:.5});
+migIO.observe(migMap);
+
+/* 泳道圖 — 節點詳情 + 跑一張合約 */
+const laneDetail=document.getElementById("laneDetail");
+document.querySelectorAll(".lnode").forEach(n=>{
+  n.onclick=()=>{
+    laneDetail.innerHTML=`<b>${n.textContent}</b>${n.dataset.d}`+
+      (n.dataset.w&&n.dataset.w!=="—"?`<div class="dwrite">資料寫入 → ${n.dataset.w}</div>`:"");
+  };
+});
+let laneTimer=[];
+function laneRunPlay(){
+  laneTimer.forEach(clearTimeout);laneTimer=[];
+  document.querySelectorAll(".lg-stage,.lnode").forEach(x=>x.classList.remove("lit"));
+  for(let st=1;st<=6;st++){
+    laneTimer.push(setTimeout(()=>{
+      document.querySelectorAll(".lg-stage.lit,.lnode.lit").forEach(x=>x.classList.remove("lit"));
+      document.querySelector(`.lg-stage[data-st="${st}"]`).classList.add("lit");
+      document.querySelectorAll(`.lg-cell[data-st="${st}"] .lnode`).forEach(x=>x.classList.add("lit"));
+    },(st-1)*1150));
+  }
+  laneTimer.push(setTimeout(()=>{
+    document.querySelectorAll(".lg-stage.lit,.lnode.lit").forEach(x=>x.classList.remove("lit"));
+    const h=document.getElementById("loopHint");
+    h.style.transition="background .4s";h.style.background="var(--accent-wash)";
+    setTimeout(()=>h.style.background="",1400);
+  },6*1150));
+}
+document.getElementById("laneRun").onclick=laneRunPlay;
+const laneIO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){laneRunPlay();laneIO.unobserve(e.target)}})},{threshold:.3});
+laneIO.observe(document.getElementById("laneGrid"));
+
 /* scrollspy */
-const chTitles={s0:"封面",s1:"為什麼是現在",s2:"產品定位",s3:"合約生命週期",s4:"三入口",s5:"Agentic 差異化",s6:"三階段體驗",s7:"技術架構",s8:"卡帶規範",s9:"成功指標",s10:"執行路線圖",s11:"團隊分工",s12:"待拍板"};
+/* scrollspy */
+const chTitles={s0:"封面",s1:"為什麼是現在",s2:"產品定位",s3:"合約生命週期",s4:"三入口",s5:"Agentic 差異化",s6:"三階段體驗",s13:"轉移與嵌入",s14:"Agentic 作業泳道",s7:"技術架構",s8:"卡帶規範",s9:"成功指標",s10:"執行路線圖",s11:"團隊分工",s12:"待拍板"};
+const chNums={s0:"0",s1:"1",s2:"2",s3:"3",s4:"4",s5:"5",s6:"6",s13:"7",s14:"8",s7:"9",s8:"10",s9:"11",s10:"12",s11:"13",s12:"14"};
 const spy=new IntersectionObserver(es=>{
   es.forEach(e=>{
     if(!e.isIntersecting)return;
-    const id=e.target.id,n=id.replace("s","");
+    const id=e.target.id,n=chNums[id]||id.replace("s","");
     document.getElementById("curCh").textContent=n;
     document.getElementById("curTitle").textContent=chTitles[id]||"";
     document.querySelectorAll(".toc a").forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+id));

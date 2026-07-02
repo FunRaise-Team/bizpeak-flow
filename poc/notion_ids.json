@@ -1,0 +1,19 @@
+{
+  "poc_page": "391b2192-4515-8137-a95c-c1d0f74f97e6",
+  "contracts": {
+    "database_id": "d916afa4-6d03-4783-beed-059d305f8eb4",
+    "data_source_id": "f91e2e44-139c-4324-8852-455fd8178d63"
+  },
+  "payments": {
+    "database_id": "12492c8b-2297-4829-8b13-c51f8a235956",
+    "data_source_id": "b8fb4880-7262-4834-9bd4-7ce81c122e31"
+  },
+  "events": {
+    "database_id": "7a9b751e-911f-4eaf-aa75-125248c88453",
+    "data_source_id": "fb8da80d-49b9-4725-8768-8edbf7e2d90d"
+  },
+  "cartridges": {
+    "database_id": "6ecf43c6-50d2-435e-aa2a-5e114f332d8e",
+    "data_source_id": "d9fc8ba9-3b01-4dc8-a827-17e3265a9f2b"
+  }
+}
