@@ -1,0 +1,34 @@
+# 🔴 FIRST ACTION (DO THIS NOW, NO DELIBERATION)
+Call the built-in `image_gen` tool **right now** with piece 1 below, then pieces 2, 3, 4 — four separate image_gen calls in this session.
+**DO NOT** write a markdown prompt brief instead of calling the tool.
+**DO NOT** ask for confirmation.
+**DO NOT** explain what you're about to do — just invoke `image_gen`.
+After each tool returns, save/move the image to cwd as piece-1.png, piece-2.png, piece-3.png, piece-4.png. Then write generation-log.md.
+
+--- Brief（四張、同一品牌系統、cwd 的 DESIGN.md 是硬約束）---
+
+1. Outcome
+   FUNRAISE 公司內部提案頁的四張配圖。讀者是公司管理層與同仁 — 第一秒感受到「這是真人設計師為這個提案手工打磨的圖」、印刷年報質感、不是 AI 生成俗套。四張各司其職、風格同屬一個家族（白底、墨線、單一品牌黃 #FAC800 強調）。
+
+2. Hard Invariants（每張的核心與必含字）
+   - Piece 1「主機與卡帶」架構概念圖：一句核心 — 平台像遊戲主機、功能像可插拔卡帶。工程分解圖（exploded diagram）語言、hairline 墨線、編號註記。必含 verbatim 字：「主機平台」「卡帶」「BizPeak Flow」。卡帶槽位至少 4 個、其中一個插著（標「合約生命週期」）。
+   - Piece 2「合約生命週期閉環」資訊圖表：一句核心 — 從報價到續約是一個閉環軌道、逾期會被系統抓住。環形或軌道式流程圖、站點式標號 C0 到 C7。必含 verbatim 字：「報價」「簽核」「回簽」「收款」「續約」。品牌黃標記「收款」段（本提案要解的痛點）。
+   - Piece 3「三入口」產品介面概念圖：一句核心 — 同一套資料、三種角色各看各的。三個並置的介面視窗（個人 / 行政財務 / 管理層）、以乾淨的線框 + 少量色塊表現、不要求擬真小字（介面內容用色塊與線條示意、僅視窗標題用可讀中文）。必含 verbatim 字：「個人入口」「行政財務」「管理層」。
+   - Piece 4「邊聊邊操作」互動情境圖：一句核心 — 一句話、系統起草、人拍板。左側對話氣泡（一句可讀中文：「幫我開這個客戶的續約單」）、右側浮現的合約草稿文件（示意線條）、中間一個明確的人審節點（印章或勾選的隱喻）。必含 verbatim 字：「人審」。
+   - 全部：繁體中文、字要正確可辨識；BizPeak Flow 是唯一允許的英文詞組（加 C0-C7 代號）。
+
+3. Hard Constraints（量化邊界）
+   - 四張、每張 single image_gen call、native size 自選（建議橫式 3:2 或 16:10、四張一致）
+   - 白底、#333333 墨、#FAC800 單一強調色（每張 5–15% 面積）、遵守 cwd DESIGN.md
+   - 禁密集小字段落 — 中文字寧大寧少
+
+4. Out-of-Scope（不准動）
+   - 不准 Pillow / PIL / cairo / matplotlib / HTML→PNG 後製
+   - 不准 cwd 外寫檔
+   - 不准自行加 disclaimer / watermark / 版本號 / emoji / QR / URL
+   - 不規定 pixel layout — 構圖是你的判斷（但別用置中大標語 + 三欄卡片的 AI 俗套起手）
+
+5. Verification（怎麼判斷成功）
+   - cwd 有 piece-1.png ~ piece-4.png 四檔
+   - generation-log.md 含「four image_gen calls, native size, no post-processing」與每張的一句構圖說明
+   - generation-log.md 不含 rasterizer / render_*.py / Pillow / cairo 字樣

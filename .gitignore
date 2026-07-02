@@ -1,0 +1,13 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+dist/
+.vercel
+*.log
+.claude/settings.local.json
+wip/image-gen/*.png
+docs/research-internal/

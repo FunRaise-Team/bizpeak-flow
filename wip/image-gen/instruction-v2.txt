@@ -1,0 +1,28 @@
+# 🔴 FIRST ACTION (DO THIS NOW, NO DELIBERATION)
+Call the built-in `image_gen` tool **right now** with piece 4 below, then piece 5 — two separate image_gen calls in this session.
+**DO NOT** write a markdown prompt brief instead of calling the tool.
+**DO NOT** ask for confirmation or explain — just invoke `image_gen`.
+After each tool returns, save the images to /Users/nelsen/work/bizpeak-flow/wip/image-gen/ as piece-4.png (overwrite) and piece-5.png. Then append to generation-log.md.
+
+--- Brief（兩張、沿用本 session 前四張的家族風格：白底、#333333 墨線、#FAC800 單一強調、工程說明書美學）---
+
+1. Outcome
+   前一版 piece-4 被退件（概念不對）。重畫兩張、修正產品體驗的正確定義：
+   - 體驗 1.5 = 在「既有的圖形介面」上長出一個聊天框、聊天會操控背後的介面
+   - 體驗 2.0 = 使用者在自己慣用的 AI 聊天應用裡、透過 MCP 同時連自己的信箱檔案與公司合約系統
+
+2. Hard Invariants
+   - Piece 4「介面長出聊天框」：一句核心 — 同一套管理介面、右下角浮出聊天面板、聊天正在操控背後的畫面。構圖：一個完整的管理系統視窗（表格與側欄線框示意）佔主體、右下角疊一個聊天面板（品牌黃細節）、從聊天面板畫一條引導線指向背景介面中被高亮（品牌黃框）的一塊區域、表達「聊天 → 介面自己動」。必含 verbatim 字：聊天泡泡「幫我開續約單」、高亮區標註「已為你開啟草稿」。
+   - Piece 5「AI 應用中樞」：一句核心 — 使用者的 AI 聊天應用是中樞、左邊連自己的工作環境（信箱、試算表檔案的圖示化表達）、右邊透過一座標著 MCP 的橋連到公司合約系統、資料在其間流動。構圖建議軸測或平面連線圖、橋 / 管線用品牌黃。必含 verbatim 字：「MCP」「合約系統」、聊天泡泡「把這封回簽歸檔進合約系統」。
+   - 兩張皆繁體中文、字要正確；禁密集小字。
+
+3. Hard Constraints
+   - 每張 single image_gen call、native size、橫式 3:2 或 16:10、與前四張同家族（白底墨線黃強調）
+   - 遵守 cwd DESIGN.md
+
+4. Out-of-Scope
+   - 不准 Pillow / cairo / HTML→PNG 後製；不准 cwd 外寫檔；不加 watermark / emoji / QR / URL / 版本字樣
+
+5. Verification
+   - cwd 有新的 piece-4.png 與 piece-5.png
+   - generation-log.md 追加「two image_gen calls, native size, no post-processing」與各一句構圖說明
