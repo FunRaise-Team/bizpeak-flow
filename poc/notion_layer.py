@@ -16,7 +16,7 @@ IDS_FILE = Path(__file__).parent / "notion_ids.json"
 
 def _token() -> str:
     if os.environ.get("NOTION_API_KEY"):
-        return os.environ["NOTION_API_KEY"]
+        return os.environ["NOTION_API_KEY"].strip()
     env = Path.home() / "NelsenClaw" / ".env"
     if env.exists():
         for line in env.read_text().splitlines():

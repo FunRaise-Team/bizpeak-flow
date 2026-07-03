@@ -255,3 +255,132 @@ def cashflow_forecast() -> dict:
     received = sum((p["金額"] or 0) for p in payment_rows() if p["狀態"] == "P3")
     return {"未收款按月": dict(sorted(by_month.items())), "其中逾期": overdue,
             "未收合計": sum(by_month.values()), "已收合計": received}
+
+
+# ── 公司既有資料串接（客戶大名單 / 報價系統）──
+
+COMPANY_DS = {
+    "customers": "2a9b2192-4515-8189-a6c1-000b3d43763f",   # 生態系合作廠商大名單
+    "quotes": "302b2192-4515-8077-8d4c-000b65889864",       # 報價 DB（funraise-sales-skills）
+}
+_co_cache: dict = {}
+
+
+def _cached(key, ttl, fn):
+    import time as _t
+    hit = _co_cache.get(key)
+    if hit and _t.time() - hit[0] < ttl:
+        return hit[1]
+    val = fn()
+    _co_cache[key] = (_t.time(), val)
+    return val
+
+
+def notion_url(page_id: str) -> str:
+    return "https://www.notion.so/" + (page_id or "").replace("-", "")
+
+
+def customer_list() -> list[dict]:
+    """公司客戶主資料（生態系合作廠商大名單）— 名稱 + Account Owner。快取 5 分鐘。"""
+    def fetch():
+        from notion_layer import api
+        out, cursor = [], None
+        while True:
+            body = {"page_size": 100}
+            if cursor:
+                body["start_cursor"] = cursor
+            res = api("POST", f"/data_sources/{COMPANY_DS['customers']}/query", body)
+            for r in res["results"]:
+                nm = next(("".join(t.get("plain_text", "") for t in v["title"])
+                           for v in r["properties"].values() if v["type"] == "title"), "")
+                own = r["properties"].get("Account Owner", {})
+                owner = ""
+                if own.get("type") == "people" and own["people"]:
+                    owner = own["people"][0].get("name", "")
+                elif own.get("type") == "rich_text":
+                    owner = "".join(t.get("plain_text", "") for t in own["rich_text"])
+                if nm and not nm.startswith("🖼"):
+                    out.append({"name": nm, "owner": owner})
+            if not res.get("has_more"):
+                break
+            cursor = res["next_cursor"]
+        return sorted(out, key=lambda x: x["name"])
+    return _cached("customers", 300, fetch)
+
+
+def staff_list() -> list[str]:
+    """負責人清單 — 客戶大名單 Account Owner ∪ 報價單負責人（同事帳號庫未分享給整合、以此替代）。"""
+    def fetch():
+        names = {c["owner"] for c in customer_list() if c["owner"]}
+        for q in quote_rows():
+            if q["報價負責人"]:
+                names.add(q["報價負責人"])
+        return sorted(names)
+    return _cached("staff", 300, fetch)
+
+
+def quote_rows() -> list[dict]:
+    """報價 DB 原始列（快取 60 秒）。"""
+    def fetch():
+        from notion_layer import api
+        res = api("POST", f"/data_sources/{COMPANY_DS['quotes']}/query", {"page_size": 100})
+        out = []
+        for r in res["results"]:
+            p = r["properties"]
+            def rd(name):
+                v = p.get(name, {})
+                t = v.get("type")
+                if t == "title": return "".join(x.get("plain_text", "") for x in v["title"])
+                if t == "rich_text": return "".join(x.get("plain_text", "") for x in v["rich_text"])
+                if t in ("select", "status"): return (v.get(t) or {}).get("name")
+                if t == "number": return v.get("number")
+                if t == "url": return v.get("url")
+                if t == "people": return (v["people"][0].get("name", "") if v.get("people") else "")
+                return None
+            out.append({
+                "page_id": r["id"],
+                "報價單號": rd("報價單號"), "客戶名稱": rd("客戶名稱"),
+                "狀態": rd("狀態"), "報價金額": rd("報價金額"), "優惠價": rd("優惠價"),
+                "報價負責人": rd("報價負責人"), "部門": rd("部門"),
+                "報價單連結": rd("報價單連結") or rd("審核連結"),
+            })
+        return out
+    return _cached("quotes", 60, fetch)
+
+
+READY_STATES = {"已簽約", "已核准", "已用印"}
+
+
+def quote_ready_list() -> list[dict]:
+    """可建約的報價單（狀態已簽約 / 已核准 / 已用印）、標記是否已匯入過。"""
+    imported = set()
+    for e in event_rows(200):
+        a = e.get("動作") or ""
+        if "報價單匯入" in a:
+            for tok in a.split():
+                if tok.startswith("FR-Q-"):
+                    imported.add(tok.rstrip("、）("))
+    out = []
+    for q in quote_rows():
+        if (q["狀態"] or "") in READY_STATES and q["報價單號"]:
+            out.append({**q, "已匯入": q["報價單號"] in imported,
+                        "notion_url": notion_url(q["page_id"])})
+    return out
+
+
+def quote_import(quote_no: str, terms: int = 1, first_due: str = "", actor: str = "使用者") -> dict:
+    """從已簽約報價單一鍵建約（C0）— 帶入客戶、金額（優惠價優先）、負責人、留報價單號關聯。"""
+    qs = [q for q in quote_rows() if q["報價單號"] == quote_no]
+    if not qs:
+        return {"error": f"找不到報價單 {quote_no}"}
+    q = qs[0]
+    if (q["狀態"] or "") not in READY_STATES:
+        return {"error": f"報價單 {quote_no} 狀態為「{q['狀態']}」— 已簽約 / 已核准 / 已用印才能建約"}
+    amount = q["優惠價"] or q["報價金額"] or 0
+    r = contract_create(q["客戶名稱"] or "（報價單未填客戶）", amount, terms, first_due,
+                        q["報價負責人"] or "", "", actor=actor)
+    if not r.get("ok"):
+        return r
+    log_event(r["合約編號"], f"報價單匯入 {quote_no} → 建約（{q['客戶名稱']}、{amount:,.0f}、負責人 {q['報價負責人']}）", actor)
+    return {"ok": True, "合約編號": r["合約編號"], "報價單號": quote_no,
+            "客戶": q["客戶名稱"], "金額": amount}

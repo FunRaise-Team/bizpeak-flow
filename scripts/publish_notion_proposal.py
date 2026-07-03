@@ -7,7 +7,7 @@ from pathlib import Path
 
 PAGE_ID = "c97d47abdd164fc7a26bd0e206132705"
 MARKER = "Flow 立項提案"
-VERSION = "BizPeak Flow 立項提案 v0.4"
+VERSION = "BizPeak Flow 立項提案 v0.5"
 SITE = "https://bizpeak-flow-proposal.vercel.app"
 REPO = "https://github.com/FunRaise-Team/bizpeak-flow"
 
@@ -90,11 +90,26 @@ b1 = [
     h1(VERSION),
     callout([rt("從報價單產生的那一刻、到收款與續約的完整閉環。", bold=True),
              rt("電子簽核、合約管理、催收自動化 — 公司工作流「主幹道」的第一段路、BizPeak 生態系第一個 Dogfooding 產品。")], icon="🎯"),
-    p(rt("發起人：Nelsen Chen（COO）｜文件：FR-BPF-2026-001 v0.4｜2026-07-02｜狀態："),
+    p(rt("發起人：Nelsen Chen（COO）｜文件：FR-BPF-2026-001 v0.5｜2026-07-03｜狀態："),
       rt("待拍板", bold=True, color="orange")),
     callout([rt("一頁式互動提案（對外可分享）：", bold=True), rt(SITE, link=SITE),
              rt("　｜　協作程式庫："), rt("FunRaise-Team/bizpeak-flow", link=REPO), rt("（public、含完整規格文件與 POC）")], icon="🔗", color="gray_background"),
-    callout([rt("POC 已可動：", bold=True), rt("Notion 資料層四庫已建（", ), rt("POC 頁", link="https://www.notion.so/391b219245158137a95cc1d0f74f97e6"), rt("）、MCP 伺服器六個能力工具驗收通過 — 在 Claude 掛上 repo 的 poc/ 即可直接問「哪些款項逾期」。掛載指令見 poc/README.md。")], icon="🧪", color="green_background"),
+    callout([rt("線上體驗（點開即玩、內部分享用）：", bold=True),
+             rt("bizpeak-flow-app.vercel.app", link="https://bizpeak-flow-app.vercel.app/?key=d813f47353fa5571"),
+             rt(" — 合約總覽（詳情面板・生命週期）、收款、逾期、日曆、現金流、事件留痕、右下 AI 助理；已串公司客戶大名單（514 家）與報價系統（已簽約報價單一鍵建約）。資料層在 Notion（"),
+             rt("資料層頁", link="https://www.notion.so/392b2192451581e5b756f414b4ac1980"),
+             rt("）、每筆資料可從介面直開 Notion 原頁。")], icon="🚀", color="green_background"),
+    toggle("團隊五分鐘試玩腳本（點開）", [
+        numbered(rt("開上面的線上體驗連結（金鑰已含在連結內、瀏覽器會記住 30 天）")),
+        numbered(rt("總覽：點任一合約列 → 詳情面板（生命週期軌道、款項、事件、全部動作）；每列「↗ Notion」直開原始頁")),
+        numbered(rt("「＋ 新增合約」：客戶欄可從公司客戶大名單選；或用下方「從已簽約報價單一鍵建立」— 那是真的報價單資料")),
+        numbered(rt("把新合約一路「推進」到 C4 回簽生效 → 系統自動產生款項排程 → 切「現金流」看數字即時進來")),
+        numbered(rt("試著直接推到 C6 結案 → 會被擋（款項未收清）— 終端不變量")),
+        numbered(rt("切右上「財務」視角 → 收款頁「開立發票」「確認收款」；全部收清後才放行結案；結案後 C7 可「開新約」閉環")),
+        numbered(rt("「日曆」頁籤：款項與合約到期散在月曆上、點任一項直開該合約")),
+        numbered(rt("右下「助理」隨便說：「哪些款項逾期」「未來三個月會收多少」「幫○○開一張 30 萬兩期的合約」「祥豐那張推進到下一步」— 它會自己查、自己操作、並把你導到對應頁面")),
+        p(rt("提醒：這是概念驗證 — 合約資料為示意（可隨意操作）；客戶名單與報價單是公司真實資料（唯讀串接、匯入建約才會寫入合約庫）。每個動作都留痕在「事件」頁。", color="gray")),
+    ]),
     p(rt("敘事主軸：", bold=True), rt("從公司自身痛點出發、先在內部打通合約閉環、驗證後產品化 — 成為 BizPeak 生態系對外的第一個產品。")),
     divider(),
 
@@ -249,6 +264,6 @@ for b in verify:
     if t == "heading_1" and txt: h1s.append(txt)
 print(f"\n驗證：頁面共 {len(verify)} 頂層塊、H1：")
 for x in h1s: print("  -", x)
-ok = any("v0.4" in x for x in h1s) and not any(("v0.1" in x or "v0.2" in x or "v0.3" in x) for x in h1s)
-print(f"\nv0.4 存在且舊版已移除：{ok}｜合計 append {total} 塊")
+ok = any("v0.5" in x for x in h1s) and not any(("v0.1" in x or "v0.2" in x or "v0.3" in x or "v0.4" in x) for x in h1s)
+print(f"\nv0.5 存在且舊版已移除：{ok}｜合計 append {total} 塊")
 sys.exit(0 if ok else 2)

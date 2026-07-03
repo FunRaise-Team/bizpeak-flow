@@ -15,12 +15,14 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.6;}
 .mono{font-family:var(--mono);font-feature-settings:'tnum';}
+a.nlink{font-family:var(--mono);font-size:11px;color:var(--ink3);text-decoration:none;border:1px solid var(--hair);padding:1px 6px;white-space:nowrap;}
+a.nlink:hover{color:var(--acc);border-color:var(--accbg);}
 
-.top{position:sticky;top:0;z-index:20;height:48px;background:#fff;border-bottom:1px solid var(--hair2);display:flex;align-items:center;gap:20px;padding:0 22px;}
+.top{position:sticky;top:0;z-index:20;height:48px;background:#fff;border-bottom:1px solid var(--hair2);display:flex;align-items:center;gap:16px;padding:0 20px;}
 .top .brand{font-weight:900;font-size:15px;white-space:nowrap;}
 .top .brand i{font-style:normal;color:var(--acc);}
 .tabs{display:flex;gap:2px;height:48px;}
-.tabs button{font-family:var(--sans);font-size:13.5px;border:none;background:none;padding:0 13px;cursor:pointer;color:var(--ink3);white-space:nowrap;}
+.tabs button{font-family:var(--sans);font-size:13.5px;border:none;background:none;padding:0 12px;cursor:pointer;color:var(--ink3);white-space:nowrap;}
 .tabs button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 -2px 0 var(--accbg);}
 .top .grow{flex:1;}
 .top .newbtn{font-family:var(--sans);font-size:12.5px;font-weight:700;border:1px solid var(--ink);background:#fff;padding:6px 13px;cursor:pointer;white-space:nowrap;}
@@ -29,15 +31,24 @@ body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:
 .top .sync{font-family:var(--mono);font-size:10.5px;color:var(--ink3);white-space:nowrap;}
 .top .aibtn{font-family:var(--sans);font-size:12.5px;font-weight:700;border:1px solid var(--ink);background:var(--accbg);padding:6px 14px;cursor:pointer;}
 
-.wrap{max-width:1200px;margin:0 auto;padding:22px;}
+.wrap{max-width:1240px;margin:0 auto;padding:22px;}
 .pane{display:none;}
 .pane.on{display:block;}
-.statbar{display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
-.stat{border:1px solid var(--hair2);background:#fff;padding:12px 18px;min-width:150px;}
+.statbar{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;}
+.stat{border:1px solid var(--hair2);background:#fff;padding:12px 18px;min-width:148px;}
 .stat b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink3);font-weight:500;margin-bottom:2px;}
 .stat span{font-family:var(--mono);font-size:20px;font-weight:500;}
 .stat span.bad{color:var(--bad);}
 .stat span.good{color:var(--ok);}
+
+/* 團隊載量 */
+.team{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.tm{border:1px solid var(--hair2);background:#fff;padding:8px 14px;cursor:pointer;font-size:12.5px;display:flex;gap:12px;align-items:baseline;}
+.tm:hover{border-color:var(--ink);}
+.tm.on{border-color:var(--accbg);background:var(--wash);}
+.tm b{font-size:13px;}
+.tm .mono{font-size:11.5px;color:var(--ink2);}
+.tm .od{color:var(--bad);}
 
 table.g{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--hair2);font-size:13px;}
 table.g th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink3);font-weight:500;text-align:left;padding:9px 14px;border-bottom:1px solid var(--hair2);background:#FAFAF7;}
@@ -56,16 +67,60 @@ button.act{font-family:var(--sans);font-size:12px;font-weight:500;border:1px sol
 button.act:hover{background:var(--ink);color:#fff;}
 button.act.pri{background:var(--accbg);border-color:var(--accbg);font-weight:700;}
 button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
+button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
+.dnote{font-size:12px;color:var(--ink3);margin-top:8px;}
 
-.detail td{background:#FAFAF7;}
-.track{display:flex;align-items:center;padding:6px 0 10px;}
-.track .nd{width:26px;height:26px;border:1px solid var(--hair2);background:#fff;font-family:var(--mono);font-size:9.5px;display:flex;align-items:center;justify-content:center;color:var(--ink3);flex:none;}
+/* 詳情面板 */
+.drawer-mask{position:fixed;inset:0;background:rgba(38,38,31,.28);opacity:0;pointer-events:none;transition:opacity .25s;z-index:44;}
+.drawer-mask.on{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(480px,94vw);background:#fff;border-left:1px solid var(--ink);z-index:45;transform:translateX(102%);transition:transform .28s ease;display:flex;flex-direction:column;}
+.drawer.on{transform:none;}
+.drawer .dh2{padding:14px 18px;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:10px;}
+.drawer .dh2 b{font-size:16px;}
+.drawer .dh2 .mono{font-size:11px;color:var(--ink3);}
+.drawer .dh2 .x{margin-left:auto;cursor:pointer;font-size:20px;color:var(--ink3);line-height:1;}
+.drawer .db{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px;}
+.dsec b.lb{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink3);font-weight:500;margin-bottom:7px;}
+.meta2{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;font-size:13px;}
+.meta2 div span:first-child{color:var(--ink3);font-size:11.5px;display:block;}
+.meta2 .mono{font-size:12.5px;}
+.track{display:flex;align-items:center;flex-wrap:wrap;gap:0;}
+.track .nd{width:30px;height:30px;border:1px solid var(--hair2);background:#fff;font-family:var(--mono);font-size:9.5px;display:flex;align-items:center;justify-content:center;color:var(--ink3);flex:none;}
 .track .nd.pass{background:var(--ink);border-color:var(--ink);color:#fff;}
 .track .nd.cur{background:var(--accbg);border-color:var(--accbg);color:var(--ink);font-weight:700;}
-.track .ln{height:1px;background:var(--hair2);width:34px;}
+.track .ln{height:1px;background:var(--hair2);width:20px;}
 .track .ln.pass{background:var(--ink);}
-.subrow{font-size:12.5px;color:var(--ink2);}
-.dnote{font-size:12px;color:var(--ink3);margin-top:6px;}
+.actrow{display:flex;gap:8px;flex-wrap:wrap;}
+.payline{border:1px solid var(--hair);padding:8px 12px;display:flex;align-items:center;gap:10px;font-size:12.5px;margin-bottom:6px;}
+.payline .mono{font-size:11.5px;}
+.payline .sp{flex:1;}
+.evline{border-left:2px solid var(--hair2);padding:2px 0 10px 12px;margin-left:4px;font-size:12.5px;position:relative;}
+.evline::before{content:"";position:absolute;left:-5px;top:8px;width:8px;height:8px;background:var(--accbg);border:1px solid var(--acc);}
+.evline .mono{font-size:10.5px;color:var(--ink3);}
+
+/* 日曆 */
+.calhead{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.calhead b{font-size:17px;font-family:var(--mono);}
+.calhead button{font-family:var(--sans);border:1px solid var(--hair2);background:#fff;padding:4px 12px;cursor:pointer;font-size:13px;}
+.calhead .lg{margin-left:auto;font-size:11.5px;color:var(--ink2);display:flex;gap:14px;}
+.calhead .lg i{font-style:normal;display:inline-flex;align-items:center;gap:5px;}
+.calhead .lg .dot{width:8px;height:8px;display:inline-block;}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--hair2);background:#fff;}
+.cal .wd{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink3);padding:7px 10px;border-bottom:1px solid var(--hair2);background:#FAFAF7;text-align:center;}
+.cal .cell{min-height:96px;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:6px 8px;font-size:11.5px;}
+.cal .cell:nth-child(7n){border-right:none;}
+.cal .cell .dnum{font-family:var(--mono);font-size:11px;color:var(--ink3);}
+.cal .cell.today{background:var(--wash);}
+.cal .cell.today .dnum{color:var(--acc);font-weight:700;}
+.cal .cell.dim{background:#FAFAF7;color:var(--ink3);}
+.cal .ev{display:block;margin-top:4px;padding:2px 6px;border:1px solid var(--hair2);background:#fff;cursor:pointer;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal .ev:hover{border-color:var(--ink);}
+.cal .ev .dot{width:7px;height:7px;display:inline-block;margin-right:5px;}
+.dot.p0{background:#fff;border:1px solid var(--ink3);}
+.dot.p1,.dot.p2{background:var(--accbg);}
+.dot.p3{background:var(--ok);}
+.dot.p4{background:var(--bad);}
+.dot.exp{background:var(--ink);}
 
 /* 現金流 */
 .cfrow{display:grid;grid-template-columns:90px 1fr 120px;gap:14px;align-items:center;background:#fff;border:1px solid var(--hair2);border-top:none;padding:10px 16px;font-size:13px;}
@@ -75,17 +130,23 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
 .cfbar i.od{background:#E0BBB6;}
 
 /* 建約面板 */
-.overlay{position:fixed;inset:0;background:rgba(38,38,31,.35);display:none;align-items:flex-start;justify-content:center;z-index:60;padding-top:9vh;}
+.overlay{position:fixed;inset:0;background:rgba(38,38,31,.35);display:none;align-items:flex-start;justify-content:center;z-index:60;padding-top:6vh;overflow-y:auto;}
 .overlay.on{display:flex;}
-.panel{background:#fff;border:1px solid var(--ink);width:min(440px,92vw);box-shadow:0 16px 48px rgba(38,38,31,.2);}
+.panel{background:#fff;border:1px solid var(--ink);width:min(520px,94vw);box-shadow:0 16px 48px rgba(38,38,31,.2);margin-bottom:6vh;}
 .panel .ph{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--hair);font-weight:700;font-size:14px;}
 .panel .ph span{margin-left:auto;cursor:pointer;color:var(--ink3);font-size:18px;line-height:1;}
 .panel .pb{padding:16px;display:flex;flex-direction:column;gap:11px;}
 .panel label{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
-.panel input,.panel select{width:100%;font-family:var(--sans);font-size:13.5px;border:1px solid var(--hair2);padding:8px 10px;outline:none;}
+.panel input{width:100%;font-family:var(--sans);font-size:13.5px;border:1px solid var(--hair2);padding:8px 10px;outline:none;}
 .panel input:focus{border-color:var(--accbg);}
 .panel .pf{padding:12px 16px;border-top:1px solid var(--hair);display:flex;gap:8px;justify-content:flex-end;}
 .panel .pf .err{margin-right:auto;font-size:12px;color:var(--bad);align-self:center;}
+.qsec{border-top:1px dashed var(--hair2);padding:12px 16px 4px;}
+.qsec .lb2{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink3);margin-bottom:8px;}
+.qline{border:1px solid var(--hair);padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;}
+.qline .mono{font-size:11px;}
+.qline .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.qline .done{color:var(--ink3);font-size:11px;}
 
 /* 聊天框 */
 .dock{position:fixed;right:18px;bottom:18px;width:340px;border:1px solid var(--ink);background:#fff;box-shadow:0 10px 36px rgba(38,38,31,.16);display:flex;flex-direction:column;z-index:40;}
@@ -104,7 +165,7 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
 .dock .di input{flex:1;font-family:var(--sans);font-size:12.5px;border:1px solid var(--hair2);padding:7px 10px;outline:none;}
 .dock .di input:focus{border-color:var(--accbg);}
 .dock .di button{font-family:var(--sans);font-size:12.5px;font-weight:700;border:1px solid var(--accbg);background:var(--accbg);padding:0 14px;cursor:pointer;}
-@media(max-width:760px){.dock{left:12px;right:12px;width:auto;}.top{flex-wrap:wrap;height:auto;padding:8px 14px;}.tabs{height:38px;}}
+@media(max-width:760px){.dock{left:12px;right:12px;width:auto;}.top{flex-wrap:wrap;height:auto;padding:8px 14px;}.tabs{height:38px;overflow-x:auto;}}
 </style>
 </head>
 <body>
@@ -115,6 +176,7 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
     <button class="on" data-t="overview">合約總覽</button>
     <button data-t="payments">收款</button>
     <button data-t="overdue">逾期</button>
+    <button data-t="calendar">日曆</button>
     <button data-t="cashflow">現金流</button>
     <button data-t="events">事件</button>
   </div>
@@ -122,8 +184,6 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
   <button class="newbtn" id="newBtn">＋ 新增合約</button>
   <select id="roleSel" title="角色視角">
     <option value="all">全部視角</option>
-    <option value="sales:王小明">業務 · 王小明</option>
-    <option value="sales:李小華">業務 · 李小華</option>
     <option value="finance">財務</option>
     <option value="mgmt">管理層</option>
   </select>
@@ -134,16 +194,17 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
 <div class="wrap">
   <div class="pane on" data-p="overview">
     <div class="statbar" id="stats"></div>
+    <div class="team" id="teamBar"></div>
     <table class="g" id="ctbl">
-      <thead><tr><th>合約</th><th>客戶</th><th>狀態</th><th>負責業務</th><th>期數</th><th>到期日</th><th style="text-align:right">金額</th><th></th></tr></thead>
+      <thead><tr><th>合約</th><th>客戶</th><th>狀態</th><th>負責業務</th><th>期數</th><th>到期日</th><th style="text-align:right">金額</th><th></th><th></th></tr></thead>
       <tbody></tbody>
     </table>
-    <p class="dnote">點合約列展開生命週期與款項。閉環規則：回簽生效（C4）自動產生款項排程；款項全收才可結案（C6）；續約窗口（C7）一鍵開新約。</p>
+    <p class="dnote">點合約列開詳情面板（生命週期、款項、事件、全部動作都在裡面）；↗ 直接開 Notion 原頁。點上方負責人卡可過濾。</p>
   </div>
 
   <div class="pane" data-p="payments">
     <table class="g" id="ptbl">
-      <thead><tr><th>款項</th><th>合約</th><th>期數</th><th>發票號</th><th>預計付款日</th><th style="text-align:right">金額</th><th>狀態</th><th></th></tr></thead>
+      <thead><tr><th>款項</th><th>合約</th><th>期數</th><th>發票號</th><th>預計付款日</th><th style="text-align:right">金額</th><th>狀態</th><th></th><th></th></tr></thead>
       <tbody></tbody>
     </table>
     <p class="dnote">「開立發票」「確認收款」是人審動作 — 按下即寫回 Notion 並留痕。</p>
@@ -155,13 +216,24 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
       <thead><tr><th>款項</th><th>合約</th><th>預計付款日</th><th>逾期天數</th><th style="text-align:right">金額</th><th></th></tr></thead>
       <tbody></tbody>
     </table>
-    <p class="dnote">催收梯級（提案 §3）：D+3 提醒業務 → D+7 起草催收信 → D+30 升級主管 → D+60 強制升級決策。通知通道（Teams）於正式版接上。</p>
+    <p class="dnote">催收梯級：D+3 提醒業務 → D+7 起草催收信 → D+30 升級主管 → D+60 強制升級決策。</p>
+  </div>
+
+  <div class="pane" data-p="calendar">
+    <div class="calhead">
+      <button id="calPrev">‹</button><b id="calTitle"></b><button id="calNext">›</button><button id="calToday">今天</button>
+      <div class="lg">
+        <i><span class="dot p0"></span>排程</i><i><span class="dot p1"></span>已開票</i><i><span class="dot p3"></span>已收款</i><i><span class="dot p4"></span>逾期</i><i><span class="dot exp"></span>合約到期</i>
+      </div>
+    </div>
+    <div class="cal" id="calGrid"></div>
+    <p class="dnote">款項落在預計付款日、合約落在到期日 — 點任一項開該合約詳情。</p>
   </div>
 
   <div class="pane" data-p="cashflow">
     <div class="statbar" id="cfstats"></div>
     <div id="cfbars"></div>
-    <p class="dnote">未收款按預計付款月彙總 — 回簽生效的當下、這張表就更新（款項排程自動產生）。</p>
+    <p class="dnote">未收款按預計付款月彙總 — 回簽生效當下、款項排程自動產生、這張表即時更新。</p>
   </div>
 
   <div class="pane" data-p="events">
@@ -173,17 +245,29 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
   </div>
 </div>
 
+<!-- 詳情面板 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<div class="drawer" id="drawer">
+  <div class="dh2"><b id="drTitle">—</b><span class="mono" id="drSub"></span><span class="x" id="drClose">×</span></div>
+  <div class="db" id="drBody"></div>
+</div>
+
+<!-- 建約面板 -->
 <div class="overlay" id="newOverlay">
   <div class="panel">
     <div class="ph">新增合約（C0 報價草稿）<span id="newClose">×</span></div>
     <div class="pb">
-      <div><label>客戶名稱 *</label><input id="fCust" placeholder="例：立誠水電工程"></div>
+      <div><label>客戶名稱 *（可從公司客戶大名單選）</label><input id="fCust" list="dlCust" placeholder="輸入或選擇客戶"><datalist id="dlCust"></datalist></div>
       <div><label>合約金額（未稅）*</label><input id="fAmt" type="number" placeholder="450000"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label>期數（1–12）</label><input id="fTerms" type="number" value="2" min="1" max="12"></div>
         <div><label>首期付款日</label><input id="fFirst" type="date"></div>
       </div>
-      <div><label>負責業務</label><input id="fOwner" placeholder="王小明"></div>
+      <div><label>負責業務</label><input id="fOwner" list="dlStaff" placeholder="輸入或選擇"><datalist id="dlStaff"></datalist></div>
+    </div>
+    <div class="qsec" id="qsec">
+      <div class="lb2">或、從已簽約報價單一鍵建立</div>
+      <div id="qlist"></div>
     </div>
     <div class="pf"><span class="err" id="fErr"></span><button class="act" id="newCancel">取消</button><button class="act pri" id="newSubmit">建立合約</button></div>
   </div>
@@ -192,7 +276,7 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
 <div class="dock" id="dock">
   <div class="dh" id="dockHead"><span class="sig"></span><b>BizPeak Flow 助理</b><span class="mono">看得懂整個系統</span></div>
   <div class="dm" id="dockMsgs">
-    <div class="b a">你好。可以問我「哪些款項逾期」、「未來三個月會收多少錢」、或直接說「幫立誠開一張 45 萬、兩期的合約」「祥豐那張推進到下一步」。</div>
+    <div class="b a">你好。可以問我「哪些款項逾期」「未來三個月會收多少」、說「幫立誠開一張 45 萬兩期的合約」、或「把已簽約的報價單匯入建約」。</div>
   </div>
   <div class="di">
     <input id="chatIn" placeholder="說一句話、介面自己動…">
@@ -201,34 +285,53 @@ button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
 </div>
 
 <script>
-let S=null,openRow=null,role="all";
+let S=null,role="all",teamFilter=null,drawerId=null,calYm=null;
 const hist=[];
 const fmt=n=>n==null?"—":Number(n).toLocaleString("zh-Hant-TW");
+const fmtK=n=>n>=10000?(Math.round(n/1000)/10)+"萬":fmt(n);
 const stCls=s=>["C4","C5","P3"].includes(s)?"ok":(s==="P4"?"lt":"wt");
-const canOps=()=>role==="all"||role.startsWith("sales");
+const nURL=id=>"https://www.notion.so/"+(id||"").replace(/-/g,"");
 const canFin=()=>role==="all"||role==="finance";
+const canOps=()=>role!=="mgmt";
 
 async function loadData(){
   const r=await fetch("/api/bootstrap");S=await r.json();
   document.getElementById("sync").textContent="同步 Notion "+S.synced_at;
-  renderAll();
+  fillDatalists();renderAll();
+  if(drawerId)openDrawer(drawerId,false);
 }
-function myContracts(){
-  if(role.startsWith("sales:")){const nm=role.split(":")[1];return S.contracts.filter(c=>c.負責業務===nm);}
-  return S.contracts;
+function fillDatalists(){
+  document.getElementById("dlCust").innerHTML=(S.customers||[]).map(c=>`<option value="${c}">`).join("");
+  document.getElementById("dlStaff").innerHTML=(S.staff||[]).map(c=>`<option value="${c}">`).join("");
 }
-function renderAll(){renderOverview();renderPayments();renderOverdue();renderCashflow();renderEvents();}
+function baseContracts(){
+  let list=S.contracts;
+  if(teamFilter)list=list.filter(c=>c.負責業務===teamFilter);
+  return list;
+}
+function renderAll(){renderOverview();renderPayments();renderOverdue();renderCalendar();renderCashflow();renderEvents();}
 
 function renderOverview(){
-  const list=myContracts();
+  const list=baseContracts();
   const act=list.filter(c=>!["C6","X1","X2"].includes(c.狀態));
   document.getElementById("stats").innerHTML=
     `<div class="stat"><b>進行中合約</b><span>${act.length}</span></div>
      <div class="stat"><b>未收合計</b><span>${fmt(S.cashflow.未收合計)}</span></div>
      <div class="stat"><b>其中逾期</b><span class="${S.cashflow.其中逾期>0?"bad":""}">${fmt(S.cashflow.其中逾期)}</span></div>
      <div class="stat"><b>逾期筆數</b><span class="${S.overdue.length>0?"bad":""}">${S.overdue.length}</span></div>`;
+  // 團隊載量
+  const by={};
+  S.contracts.forEach(c=>{
+    if(["C6","X1","X2"].includes(c.狀態))return;
+    const o=c.負責業務||"未指派";
+    by[o]=by[o]||{n:0,amt:0,od:0};
+    by[o].n++;by[o].amt+=c.金額||0;
+    if(S.overdue.some(p=>p.合約編號===c.合約編號))by[o].od++;
+  });
+  document.getElementById("teamBar").innerHTML=Object.entries(by).map(([nm,v])=>
+    `<div class="tm ${teamFilter===nm?"on":""}" onclick="toggleTeam('${nm}')"><b>${nm}</b><span class="mono">${v.n} 張 · ${fmtK(v.amt)}</span>${v.od?`<span class="mono od">逾期 ${v.od}</span>`:""}</div>`).join("");
   const tb=document.querySelector("#ctbl tbody");tb.innerHTML="";
-  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--ink3)">此視角沒有合約</td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--ink3)">沒有合約</td></tr>';return;}
   list.forEach(c=>{
     const tr=document.createElement("tr");
     tr.className="row";tr.dataset.key=c.合約編號;
@@ -243,42 +346,87 @@ function renderOverview(){
     tr.innerHTML=`<td class="mono">${c.合約編號}</td><td>${c.客戶}</td>
       <td><span class="st ${stCls(c.狀態)}">${c.狀態} ${c.狀態名||""}</span></td>
       <td>${c.負責業務||"—"}</td><td class="mono">${c.期數||"—"}</td><td class="mono">${c.到期日||"—"}</td>
-      <td class="amt">${fmt(c.金額)}</td><td>${btn}</td>`;
-    tr.onclick=()=>toggleRow(c.合約編號);
+      <td class="amt">${fmt(c.金額)}</td><td>${btn}</td>
+      <td><a class="nlink" href="${nURL(c.page_id)}" target="_blank" onclick="event.stopPropagation()">↗ Notion</a></td>`;
+    tr.onclick=()=>openDrawer(c.合約編號);
     tb.appendChild(tr);
-    if(openRow===c.合約編號)tb.appendChild(detailRow(c));
   });
 }
-function detailRow(c){
-  const tr=document.createElement("tr");tr.className="detail";
-  const pays=S.payments.filter(p=>p.合約編號===c.合約編號);
+function toggleTeam(nm){teamFilter=teamFilter===nm?null:nm;renderAll();}
+
+/* 詳情面板 */
+function openDrawer(cid,scroll=true){
+  const c=S.contracts.find(x=>x.合約編號===cid);
+  if(!c)return;
+  drawerId=cid;
+  document.getElementById("drTitle").textContent=cid;
+  document.getElementById("drSub").textContent=c.客戶;
+  const pays=S.payments.filter(p=>p.合約編號===cid);
+  const evs=S.events.filter(e=>e.合約編號===cid);
   let track='<div class="track">';
   S.order.forEach((st,i)=>{
     const idx=S.order.indexOf(c.狀態);
     const cls=i<idx?"pass":(i===idx?"cur":"");
-    track+=`<span class="nd ${cls}">${st}</span>`+(i<S.order.length-1?`<span class="ln ${i<idx?"pass":""}"></span>`:"");
+    track+=`<span class="nd ${cls}" title="${S.states[st]?.name||""}">${st}</span>`+(i<S.order.length-1?`<span class="ln ${i<idx?"pass":""}"></span>`:"");
   });
   track+="</div>";
-  const rows=pays.map(p=>`<div class="subrow mono">${p.款項編號} · ${p.期數} 期 · ${p.預計付款日||"—"} · ${fmt(p.金額)} · ${p.狀態}${p.實收日?" 實收 "+p.實收日:""}${p.發票號?" · 發票 "+p.發票號:""}</div>`).join("")||'<div class="subrow">（尚無款項排程 — 回簽生效（C4）時自動產生）</div>';
-  tr.innerHTML=`<td colspan="8">${track}${rows}</td>`;
-  return tr;
+  let acts="";
+  if(canOps()){
+    if(c.狀態==="C7")acts+=`<button class="act pri" onclick="doRenew('${cid}')">以此條件開新約（回 C0）</button>`;
+    else{
+      const nexts=(S.states[c.狀態]?.next||[]).filter(x=>x!=="C0");
+      nexts.forEach(n=>{
+        if(n.startsWith("X"))acts+=`<button class="act ghosty" onclick="doTransition('${cid}','${n}')">${n} ${S.states[n]?.name}</button>`;
+        else acts+=`<button class="act pri" onclick="doTransition('${cid}','${n}')">推進 → ${n} ${S.states[n]?.name}</button>`;
+      });
+    }
+  }
+  const payHtml=pays.length?pays.map(p=>{
+    let pb="";
+    if(canFin()){
+      if(p.狀態==="P0")pb=`<button class="act" onclick="doInvoice('${p.款項編號}')">開發票</button>`;
+      else if(p.狀態!=="P3")pb=`<button class="act pri" onclick="doPaid('${p.款項編號}')">收款</button>`;
+    }
+    return `<div class="payline"><span class="mono">${p.款項編號}</span><span class="mono">${p.期數}</span>
+      <span class="mono">${p.預計付款日||"—"}</span><span class="mono">${fmt(p.金額)}</span>
+      <span class="st ${stCls(p.狀態)}">${p.狀態}</span><span class="sp"></span>${pb}
+      <a class="nlink" href="${nURL(p.page_id)}" target="_blank">↗</a></div>`;
+  }).join(""):'<div class="dnote">尚無款項排程 — 回簽生效（C4）時自動產生</div>';
+  const evHtml=evs.length?evs.map(e=>
+    `<div class="evline"><span class="mono">${e.時間||""} · ${e.執行者||""}</span><br>${e.動作||""}</div>`).join(""):'<div class="dnote">尚無事件</div>';
+  document.getElementById("drBody").innerHTML=`
+    <div class="dsec"><div class="meta2">
+      <div><span>客戶</span>${c.客戶}</div><div><span>負責業務</span>${c.負責業務||"—"}</div>
+      <div><span>金額</span><span class="mono">${fmt(c.金額)}</span></div><div><span>期數</span><span class="mono">${c.期數||"—"}</span></div>
+      <div><span>生效日</span><span class="mono">${c.生效日||"—"}</span></div><div><span>到期日</span><span class="mono">${c.到期日||"—"}</span></div>
+    </div><div style="margin-top:10px"><a class="nlink" href="${nURL(c.page_id)}" target="_blank">↗ 在 Notion 開啟這張合約</a></div></div>
+    <div class="dsec"><b class="lb">生命週期 — 目前 ${c.狀態} ${c.狀態名||""}</b>${track}</div>
+    <div class="dsec"><b class="lb">動作</b><div class="actrow">${acts||'<span class="dnote">此視角無可用動作</span>'}</div></div>
+    <div class="dsec"><b class="lb">款項（${pays.length}）</b>${payHtml}</div>
+    <div class="dsec"><b class="lb">事件留痕（${evs.length}）</b>${evHtml}</div>`;
+  document.getElementById("drawer").classList.add("on");
+  document.getElementById("drawerMask").classList.add("on");
 }
-function toggleRow(id){openRow=openRow===id?null:id;renderOverview();}
+function closeDrawer(){drawerId=null;document.getElementById("drawer").classList.remove("on");document.getElementById("drawerMask").classList.remove("on");}
+document.getElementById("drClose").onclick=closeDrawer;
+document.getElementById("drawerMask").onclick=closeDrawer;
 
 function renderPayments(){
   const tb=document.querySelector("#ptbl tbody");tb.innerHTML="";
-  const mine=role.startsWith("sales:")?new Set(myContracts().map(c=>c.合約編號)):null;
+  const mine=teamFilter?new Set(baseContracts().map(c=>c.合約編號)):null;
   S.payments.filter(p=>!mine||mine.has(p.合約編號)).forEach(p=>{
-    const tr=document.createElement("tr");tr.dataset.key=p.款項編號;
+    const tr=document.createElement("tr");tr.className="row";tr.dataset.key=p.款項編號;
     let btn="";
     if(canFin()){
-      if(p.狀態==="P0")btn=`<button class="act" onclick="doInvoice('${p.款項編號}')">開立發票</button>`;
-      else if(p.狀態!=="P3")btn=`<button class="act pri" onclick="doPaid('${p.款項編號}')">確認收款</button>`;
+      if(p.狀態==="P0")btn=`<button class="act" onclick="event.stopPropagation();doInvoice('${p.款項編號}')">開立發票</button>`;
+      else if(p.狀態!=="P3")btn=`<button class="act pri" onclick="event.stopPropagation();doPaid('${p.款項編號}')">確認收款</button>`;
     }
     tr.innerHTML=`<td class="mono">${p.款項編號}</td><td class="mono">${p.合約編號}</td>
       <td class="mono">${p.期數}</td><td class="mono">${p.發票號||"—"}</td>
       <td class="mono">${p.預計付款日||"—"}</td><td class="amt">${fmt(p.金額)}</td>
-      <td><span class="st ${stCls(p.狀態)}">${p.狀態}${p.實收日?" · "+p.實收日:""}</span></td><td>${btn}</td>`;
+      <td><span class="st ${stCls(p.狀態)}">${p.狀態}${p.實收日?" · "+p.實收日:""}</span></td><td>${btn}</td>
+      <td><a class="nlink" href="${nURL(p.page_id)}" target="_blank" onclick="event.stopPropagation()">↗</a></td>`;
+    tr.onclick=()=>openDrawer(p.合約編號);
     tb.appendChild(tr);
   });
 }
@@ -289,14 +437,48 @@ function renderOverdue(){
   const tb=document.querySelector("#odtbl tbody");tb.innerHTML="";
   if(!S.overdue.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--ink3)">目前沒有逾期款項</td></tr>';return;}
   S.overdue.forEach(p=>{
-    const tr=document.createElement("tr");tr.dataset.key=p.款項編號;
+    const tr=document.createElement("tr");tr.className="row";tr.dataset.key=p.款項編號;
     tr.innerHTML=`<td class="mono">${p.款項編號}</td><td class="mono">${p.合約編號}</td>
       <td class="mono">${p.預計付款日}</td><td class="mono" style="color:var(--bad);font-weight:500">D+${p.逾期天數}</td>
       <td class="amt">${fmt(p.金額)}</td>
-      <td>${canFin()?`<button class="act pri" onclick="doPaid('${p.款項編號}')">確認收款</button>`:""}</td>`;
+      <td>${canFin()?`<button class="act pri" onclick="event.stopPropagation();doPaid('${p.款項編號}')">確認收款</button>`:""}</td>`;
+    tr.onclick=()=>openDrawer(p.合約編號);
     tb.appendChild(tr);
   });
 }
+
+/* 日曆 */
+function renderCalendar(){
+  if(!calYm){const t=new Date();calYm=[t.getFullYear(),t.getMonth()];}
+  const [y,m]=calYm;
+  document.getElementById("calTitle").textContent=`${y}-${String(m+1).padStart(2,"0")}`;
+  const first=new Date(y,m,1),start=first.getDay(),days=new Date(y,m+1,0).getDate();
+  const today=new Date();const tk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  const g=document.getElementById("calGrid");
+  g.innerHTML=["日","一","二","三","四","五","六"].map(w=>`<div class="wd">${w}</div>`).join("");
+  const items={};
+  S.payments.forEach(p=>{
+    if(!p.預計付款日)return;
+    (items[p.預計付款日]=items[p.預計付款日]||[]).push(
+      {cls:p.狀態.toLowerCase(),label:`${p.合約編號.slice(-3)} ${fmtK(p.金額||0)}`,cid:p.合約編號,tip:`${p.款項編號} ${p.狀態}`});
+  });
+  S.contracts.forEach(c=>{
+    if(!c.到期日)return;
+    (items[c.到期日]=items[c.到期日]||[]).push(
+      {cls:"exp",label:`${c.合約編號.slice(-3)} 到期`,cid:c.合約編號,tip:`${c.合約編號} 合約到期`});
+  });
+  for(let i=0;i<start;i++)g.innerHTML+='<div class="cell dim"></div>';
+  for(let d=1;d<=days;d++){
+    const key=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const evs=(items[key]||[]).map(it=>
+      `<span class="ev" title="${it.tip}" onclick="openDrawer('${it.cid}')"><span class="dot ${it.cls}"></span>${it.label}</span>`).join("");
+    g.innerHTML+=`<div class="cell ${key===tk?"today":""}"><span class="dnum">${d}</span>${evs}</div>`;
+  }
+}
+document.getElementById("calPrev").onclick=()=>{calYm[1]--;if(calYm[1]<0){calYm[1]=11;calYm[0]--;}renderCalendar();};
+document.getElementById("calNext").onclick=()=>{calYm[1]++;if(calYm[1]>11){calYm[1]=0;calYm[0]++;}renderCalendar();};
+document.getElementById("calToday").onclick=()=>{calYm=null;renderCalendar();};
+
 function renderCashflow(){
   const cf=S.cashflow;
   document.getElementById("cfstats").innerHTML=
@@ -307,10 +489,10 @@ function renderCashflow(){
   const entries=Object.entries(cf.未收款按月);
   if(!entries.length){wrapEl.innerHTML='<div class="dnote">沒有未收款項</div>';return;}
   const mx=Math.max(...entries.map(([,v])=>v));
-  entries.forEach(([m,v])=>{
-    const od=S.overdue.filter(p=>(p.預計付款日||"").startsWith(m)).reduce((a,p)=>a+(p.金額||0),0);
+  entries.forEach(([mo,v])=>{
+    const od=S.overdue.filter(p=>(p.預計付款日||"").startsWith(mo)).reduce((a,p)=>a+(p.金額||0),0);
     const d=document.createElement("div");d.className="cfrow";
-    d.innerHTML=`<span class="mono">${m}</span>
+    d.innerHTML=`<span class="mono">${mo}</span>
       <div class="cfbar"><i style="width:${Math.round(v/mx*100)}%"></i>${od?`<i class="od" style="width:${Math.round(od/mx*100)}%"></i>`:""}</div>
       <span class="amt">${fmt(v)}</span>`;
     wrapEl.appendChild(d);
@@ -332,7 +514,8 @@ async function api(path,body){
   return r.json();
 }
 async function doTransition(id,to){
-  if(!confirm(`把 ${id} 推進到 ${to}（${S.states[to]?.name||""}）？`))return;
+  const isX=to.startsWith("X");
+  if(!confirm(isX?`確定把 ${id} 轉為 ${to}（${S.states[to]?.name}）？`:`把 ${id} 推進到 ${to}（${S.states[to]?.name||""}）？`))return;
   const d=await api("/api/transition",{contract_id:id,to_state:to});
   if(d.error)alert(d.error);
   else if(d.schedule&&d.schedule.produced)alert(`回簽生效 — 已自動產生 ${d.schedule.produced.length} 期款項排程、現金流量預測已更新`);
@@ -355,12 +538,28 @@ async function doRenew(id){
   if(!confirm(`以 ${id} 的條件開立新約（回到 C0）？`))return;
   const d=await api("/api/renew",{contract_id:id});
   if(d.error)alert(d.error);
-  await loadData();if(d.新約)highlight(d.新約);
+  await loadData();if(d.新約){closeDrawer();switchTab("overview");highlight(d.新約);}
+}
+async function doQuoteImport(qno){
+  if(!confirm(`以報價單 ${qno} 建立合約草稿？（帶入客戶、金額、負責人）`))return;
+  const d=await api("/api/quote_import",{quote_no:qno});
+  if(d.error){alert(d.error);return;}
+  document.getElementById("newOverlay").classList.remove("on");
+  await loadData();switchTab("overview");highlight(d.合約編號);
 }
 
-/* 新增合約 */
+/* 建約面板 */
 const ov=document.getElementById("newOverlay");
-document.getElementById("newBtn").onclick=()=>{ov.classList.add("on");document.getElementById("fErr").textContent="";};
+document.getElementById("newBtn").onclick=()=>{
+  ov.classList.add("on");document.getElementById("fErr").textContent="";
+  const ql=document.getElementById("qlist");
+  const qs=(S.quotes_ready||[]);
+  ql.innerHTML=qs.length?qs.map(q=>
+    `<div class="qline"><span class="mono">${q.報價單號}</span><span class="sp">${q.客戶名稱||"—"} · ${fmt(q.優惠價||q.報價金額)} · ${q.報價負責人||"—"}</span>
+     ${q.已匯入?'<span class="done">已匯入</span>':`<button class="act pri" onclick="doQuoteImport('${q.報價單號}')">匯入</button>`}
+     <a class="nlink" href="${q.notion_url}" target="_blank">↗</a></div>`).join("")
+    :'<div class="dnote">目前沒有已簽約待建約的報價單</div>';
+};
 document.getElementById("newClose").onclick=document.getElementById("newCancel").onclick=()=>ov.classList.remove("on");
 document.getElementById("newSubmit").onclick=async()=>{
   const cust=document.getElementById("fCust").value.trim();

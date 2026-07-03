@@ -13,8 +13,8 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 import capabilities as cap
@@ -23,17 +23,34 @@ import states
 app = FastAPI(title="BizPeak Flow POC")
 WEB = Path(__file__).parent / "web"
 
+# ── 存取關卡（Rule 8：內部工具不裸奔）— 設 APP_ACCESS_KEY 才啟用；本機開發不擋 ──
+APP_KEY = os.environ.get("APP_ACCESS_KEY", "")
+
+
+@app.middleware("http")
+async def access_gate(request: Request, call_next):
+    if not APP_KEY:
+        return await call_next(request)
+    supplied = (request.query_params.get("key", "") or request.cookies.get("bpf_key", "")
+                or request.headers.get("x-app-key", ""))
+    if supplied != APP_KEY:
+        if request.url.path.startswith("/api/"):
+            return JSONResponse({"error": "未授權 — 請用完整分享連結重新開啟頁面"}, status_code=401)
+        return HTMLResponse("<div style='font-family:sans-serif;padding:48px;color:#26261F'>"
+                            "<h3>BizPeak Flow — 需要存取金鑰</h3><p>請使用完整的分享連結（含 key）開啟。</p></div>",
+                            status_code=401)
+    resp = await call_next(request)
+    if request.url.path == "/":
+        resp.set_cookie("bpf_key", APP_KEY, httponly=True, max_age=86400 * 30, samesite="lax")
+    return resp
+
 GEMINI_MODEL = "gemini-2.5-flash"
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "gemini")          # gemini | nvidia
+NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
 
 
 def _gemini_key() -> str:
-    if os.environ.get("GEMINI_API_KEY"):
-        return os.environ["GEMINI_API_KEY"]
-    env = Path.home() / "NelsenClaw" / ".env"
-    for line in env.read_text().splitlines():
-        if line.startswith("GEMINI_API_KEY="):
-            return line.split("=", 1)[1].strip()
-    raise RuntimeError("找不到 GEMINI_API_KEY")
+    return _env_key("GEMINI_API_KEY")
 
 
 # ── 30 秒快取（擋 Notion 限流；寫入後主動失效）──
@@ -52,6 +69,9 @@ def _bootstrap_data(force: bool = False) -> dict:
         "cashflow": cap.cashflow_forecast(),
         "events": cap.event_rows(),
         "states": {k: v | {"next": states.FORWARD.get(k, [])} for k, v in states.STATES.items()},
+        "customers": _safe(lambda: [c["name"] for c in cap.customer_list()], []),
+        "staff": _safe(cap.staff_list, []),
+        "quotes_ready": _safe(cap.quote_ready_list, []),
         "order": states.ORDER,
         "synced_at": datetime.now().strftime("%H:%M:%S"),
     }
@@ -63,6 +83,13 @@ def _invalidate():
     _cache["data"] = None
 
 
+def _safe(fn, fallback):
+    try:
+        return fn()
+    except Exception:
+        return fallback
+
+
 @app.get("/")
 def index():
     return FileResponse(WEB / "index.html")
@@ -70,7 +97,12 @@ def index():
 
 @app.get("/api/bootstrap")
 def bootstrap():
-    return _bootstrap_data()
+    try:
+        return _bootstrap_data()
+    except Exception as e:
+        import sys as _sys
+        print(f"bootstrap 失敗: {type(e).__name__}", file=_sys.stderr)
+        return JSONResponse({"error": f"資料層暫時無法讀取（{type(e).__name__}）"}, status_code=500)
 
 
 class TransitionReq(BaseModel):
@@ -130,6 +162,20 @@ def invoice(req: InvoiceReq):
     return r
 
 
+class QuoteImportReq(BaseModel):
+    quote_no: str
+    terms: int = 1
+    first_due: str = ""
+
+
+@app.post("/api/quote_import")
+def quote_import(req: QuoteImportReq):
+    r = cap.quote_import(req.quote_no, req.terms, req.first_due, actor="網頁使用者")
+    if r.get("ok"):
+        _invalidate()
+    return r
+
+
 class RenewReq(BaseModel):
     contract_id: str
 
@@ -166,6 +212,12 @@ TOOL_DECLS = [
      "parameters": {"type": "object", "properties": {"payment_id": {"type": "string"}, "invoice_no": {"type": "string"}}, "required": ["payment_id", "invoice_no"]}},
     {"name": "contract_renew", "description": "續約開新約（原約需在 C7 續約窗口）、新約沿用條件回 C0（人審動作）",
      "parameters": {"type": "object", "properties": {"contract_id": {"type": "string"}}, "required": ["contract_id"]}},
+    {"name": "customer_list", "description": "公司客戶主資料清單（名稱與負責人）— 建約前查客戶正式名稱用",
+     "parameters": {"type": "object", "properties": {}}},
+    {"name": "quote_ready_list", "description": "可建約的報價單清單（狀態已簽約/已核准/已用印、含是否已匯入）",
+     "parameters": {"type": "object", "properties": {}}},
+    {"name": "quote_import", "description": "從已簽約報價單一鍵建約（帶入客戶、金額、負責人）。quote_no 例 FR-Q-2026-06-18-001-SSIC（人審動作）",
+     "parameters": {"type": "object", "properties": {"quote_no": {"type": "string"}, "terms": {"type": "integer"}, "first_due": {"type": "string"}}, "required": ["quote_no"]}},
     {"name": "ui_navigate", "description": "切換使用者眼前的介面頁籤、可高亮某編號。回答涉及某頁籤資料時呼叫、讓使用者直接看到",
      "parameters": {"type": "object", "properties": {
          "tab": {"type": "string", "enum": ["overview", "payments", "overdue", "cashflow", "events"]},
@@ -196,8 +248,60 @@ CAP_FN = {
     "contract_create": lambda **kw: cap.contract_create(actor="聊天助理（人審後）", **kw),
     "payment_invoice": lambda **kw: cap.payment_invoice(actor="聊天助理（人審後）", **kw),
     "contract_renew": lambda **kw: cap.contract_renew(actor="聊天助理（人審後）", **kw),
+    "customer_list": cap.customer_list,
+    "quote_ready_list": cap.quote_ready_list,
+    "quote_import": lambda **kw: cap.quote_import(actor="聊天助理（人審後）", **kw),
 }
-WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew"}
+WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import"}
+
+
+def _env_key(name: str) -> str:
+    if os.environ.get(name):
+        return os.environ[name].strip()
+    env = Path.home() / "NelsenClaw" / ".env"
+    if env.exists():
+        for line in env.read_text().splitlines():
+            if line.startswith(name + "="):
+                return line.split("=", 1)[1].strip()
+    raise RuntimeError(f"找不到 {name}")
+
+
+def _nvidia(contents: list) -> dict:
+    """NVIDIA 免費端點（OpenAI 相容）— 格式雙向轉換、回傳仿 Gemini 結構。備援用（實測延遲高）。"""
+    msgs = []
+    for c in contents:
+        parts = c.get("parts", [])
+        if any("functionResponse" in x for x in parts):
+            for x in parts:
+                fr = x["functionResponse"]
+                msgs.append({"role": "tool", "name": fr["name"],
+                             "tool_call_id": fr["name"], "content": json.dumps(fr["response"], ensure_ascii=False)})
+        elif any("functionCall" in x for x in parts):
+            msgs.append({"role": "assistant", "tool_calls": [
+                {"id": x["functionCall"]["name"], "type": "function",
+                 "function": {"name": x["functionCall"]["name"],
+                              "arguments": json.dumps(x["functionCall"].get("args", {}), ensure_ascii=False)}}
+                for x in parts if "functionCall" in x]})
+        else:
+            msgs.append({"role": "user" if c.get("role") == "user" else "assistant",
+                         "content": "".join(x.get("text", "") for x in parts)})
+    body = {"model": NVIDIA_MODEL,
+            "messages": [{"role": "system", "content": sys_prompt()}] + msgs,
+            "tools": [{"type": "function", "function": d} for d in TOOL_DECLS],
+            "temperature": 0.2, "max_tokens": 1024}
+    req = urllib.request.Request("https://integrate.api.nvidia.com/v1/chat/completions",
+        data=json.dumps(body).encode(),
+        headers={"Authorization": f"Bearer {_env_key('NVIDIA_API_KEY')}", "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=90) as r:
+        d = json.load(r)
+    m = d["choices"][0]["message"]
+    parts = []
+    for tc in m.get("tool_calls") or []:
+        parts.append({"functionCall": {"name": tc["function"]["name"],
+                                       "args": json.loads(tc["function"].get("arguments") or "{}")}})
+    if m.get("content"):
+        parts.append({"text": m["content"]})
+    return {"candidates": [{"content": {"parts": parts}}]}
 
 
 def _gemini(contents: list) -> dict:
@@ -228,7 +332,7 @@ def chat(req: ChatReq):
 
     for _ in range(6):
         try:
-            res = _gemini(contents)
+            res = _nvidia(contents) if LLM_PROVIDER == "nvidia" else _gemini(contents)
         except Exception as e:
             return JSONResponse({"reply": f"助理暫時連不上（{e}）、請再試一次。", "actions": [], "refresh": False})
         parts = (res.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
