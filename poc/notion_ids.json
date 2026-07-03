@@ -23,5 +23,9 @@
   "comments": {
     "database_id": "590a5ccd-6226-4b54-b9c2-bd19eb7ae244",
     "data_source_id": "a5c11f88-59ab-461b-bff1-f5a7b1bf35de"
+  },
+  "templates": {
+    "database_id": "57b21f4d-61c2-4f92-9d87-18cdcb21a4b2",
+    "data_source_id": "c84bbe98-24d2-45e9-b0c9-2112ae9ccadf"
   }
 }

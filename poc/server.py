@@ -71,5 +71,29 @@ def contract_renew(contract_id: str) -> dict:
     return cap.contract_renew(contract_id, actor="MCP 使用者")
 
 
+@mcp.tool()
+def product_list() -> list[dict]:
+    """產品目錄（顧問服務 / 標準產品 / 訂閱 / 客製、含建議單價與狀態）。"""
+    return cap.product_list()
+
+
+@mcp.tool()
+def product_update(name: str, status: str = "", price: float = 0, note: str = "") -> dict:
+    """產品目錄修改（人審動作）— status 上架/停售、price 建議單價、note 說明。"""
+    return cap.product_update(name, status, price or None, note, actor="MCP 使用者")
+
+
+@mcp.tool()
+def quote_detail(quote_no: str) -> dict:
+    """報價單完整內容（項目明細與 17 條固定條款、回編輯連結）。"""
+    return cap.quote_detail(quote_no)
+
+
+@mcp.tool()
+def template_list(ttype: str = "") -> list[dict]:
+    """樣板庫查詢 — 合約條款 / 報價條款 / 保密協議 / 催收信 / 信件範本。"""
+    return cap.template_list(ttype)
+
+
 if __name__ == "__main__":
     mcp.run()

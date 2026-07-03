@@ -166,6 +166,11 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
 .dock .di input:focus{border-color:var(--accbg);}
 .dock .di button{font-family:var(--sans);font-size:12.5px;font-weight:700;border:1px solid var(--accbg);background:var(--accbg);padding:0 14px;cursor:pointer;}
 @media(max-width:760px){.dock{left:12px;right:12px;width:auto;}.top{flex-wrap:wrap;height:auto;padding:8px 14px;}.tabs{height:38px;overflow-x:auto;}}
+.pane.tour-glow{animation:tourpulse 4s ease}
+.tabs button.tour-glow{background:var(--ink);color:#fff}
+@keyframes tourpulse{0%{box-shadow:inset 0 0 0 2px var(--ink);background:rgba(0,0,0,.04)}75%{box-shadow:inset 0 0 0 2px var(--ink);background:rgba(0,0,0,.02)}100%{box-shadow:none;background:transparent}}
+.b.tstep{cursor:pointer;border-left:2px solid var(--ink)}
+.b.tstep:hover{background:rgba(0,0,0,.06)}
 </style>
 </head>
 <body>
@@ -270,7 +275,14 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
       <input id="prPrice" type="number" placeholder="建議單價（可空）" style="font-family:var(--sans);font-size:13px;border:1px solid var(--hair2);padding:7px 10px;width:150px">
       <button class="act pri" id="prAdd">加入目錄</button>
     </div>
-    <p class="dnote">目錄兩邊皆可調：這裡新增即寫入 Notion 產品庫；直接在 Notion 改、介面一分鐘內反映。建約表單的產品下拉吃同一份。</p>
+    <p class="dnote">目錄兩邊皆可調：這裡新增即寫入 Notion 產品庫；直接在 Notion 改、介面一分鐘內反映。建約表單的產品下拉吃同一份。也可以直接跟助理說「把○○停售」「○○改價 5 萬」。</p>
+    <div style="margin-top:28px;padding-top:14px;border-top:1px solid var(--hair2)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">樣板庫 <span style="font-weight:400;color:var(--ink2)">— 合約條款・保密協議・催收信；聊天說「給我 NDA 條款」直接取用</span></div>
+      <table class="g" id="tptbl">
+        <thead><tr><th>樣板名稱</th><th>類型</th><th>適用產品</th><th>狀態</th><th>內容摘要</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="pane" data-p="events">
@@ -689,8 +701,14 @@ document.getElementById("dockHead").onclick=()=>dock.classList.toggle("min");
 document.getElementById("aiToggle").onclick=()=>dock.classList.toggle("min");
 function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function mdLite(t){
-  return esc(t).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").split("\n").map(l=>{
-    const m=l.match(/^\s*[-*]\s+(.*)$/);return m?"・"+m[1]:l;
+  let s=esc(t);
+  s=s.replace(/^#{1,4}\s+(.+)$/gm,"<b>$1</b>");
+  s=s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+  s=s.replace(/`([^`\n]+)`/g,'<span class="mono">$1</span>');
+  return s.split("\n").map(l=>{
+    const m=l.match(/^\s*[-*•]\s+(.*)$/);if(m)return "・"+m[1];
+    const q=l.match(/^\s*&gt;\s+(.*)$/);if(q)return "｜"+q[1];
+    return l.replace(/^\s*\|/,"").replace(/\|\s*$/,"").replace(/\s*\|\s*/g,"　");
   }).join("\n");
 }
 function bubble(cls,text){const d=document.createElement("div");d.className="b "+cls;
@@ -713,21 +731,36 @@ async function sendChat(){
 document.getElementById("chatSend").onclick=sendChat;
 document.getElementById("chatIn").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing&&e.keyCode!==229)sendChat();});
 
-/* 系統導覽 */
+/* 系統導覽 v2 — 放慢、逐區高亮、步驟留在聊天框可回點 */
 const TOUR=[
  {tab:"overview",msg:"① 合約總覽 — 每張合約的狀態、負責人、處理時限一眼看。上排是各負責人的載量、黃條是續約提醒。點任一列開詳情面板：生命週期、款項、留言、操作都在裡面。"},
- {tab:"quotes",msg:"② 報價 — 全公司報價單同一份。「＋ 新 Co-Evo 報價」直接產單（也可以跟我說「幫○○報 Growth」）；狀態變「已簽約」後按「建約」、自動進入合約流程。"},
+ {tab:"quotes",msg:"② 報價 — 全公司報價單同一份。「＋ 新 Co-Evo 報價」直接產單（也可以跟我說「幫○○報 Growth」）；狀態變「已簽約」後按「建約」、自動進入合約流程、產品與客戶都自動掛上關聯。"},
  {tab:"payments",msg:"③ 收款 — 回簽生效時系統自動產生款項排程（支援各期不同金額）。開發票、確認收款都在這、按下就寫回 Notion。"},
- {tab:"overdue",msg:"④ 逾期 — 過期未收自動標記、第一天就浮現。催收節奏：3 天提醒業務、7 天起草催收信、30 天升級主管。"},
+ {tab:"overdue",msg:"④ 逾期 — 過期未收自動標記、第一天就浮現。催收節奏：3 天提醒業務、7 天起草催收信、30 天升級主管。催收信範本在樣板庫、跟我要就給。"},
  {tab:"calendar",msg:"⑤ 日曆 — 款項落在預計付款日、合約落在到期日、點任一項直開該合約。"},
- {tab:"cashflow",msg:"⑥ 現金流 — 未收款按月彙總、管理層視角的核心數字。想看完整流程實跑一遍、跟我說「示範一次」— 我會建一張演示合約從報價走到續約、結束自動清掉。"}];
+ {tab:"cashflow",msg:"⑥ 現金流 — 未收款按月彙總、管理層視角的核心數字。"},
+ {tab:"products",msg:"⑦ 產品與樣板庫 — 產品目錄兩邊可調（這裡改或 Notion 改都行、也可以直接叫我改）；下方樣板庫放合約條款、保密協議、催收信範本、要用開口就有。想實跑全流程就說「示範一次」— 我會建一張演示合約從報價走到續約、結束自動清掉。"}];
 let tourTimers=[];
+function tourGlow(tab){
+  document.querySelectorAll(".tour-glow").forEach(el=>el.classList.remove("tour-glow"));
+  const pn=document.querySelector(`.pane[data-p="${tab}"]`);
+  const bt=document.querySelector(`.tabs button[data-t="${tab}"]`);
+  [pn,bt].forEach(el=>{if(el){void el.offsetWidth;el.classList.add("tour-glow");}});
+  setTimeout(()=>[pn,bt].forEach(el=>el&&el.classList.remove("tour-glow")),4200);
+}
+function tourStep(i,replay){
+  const st=TOUR[i];switchTab(st.tab);tourGlow(st.tab);
+  if(replay)return;
+  const d=bubble("a tstep",st.msg);
+  d.title="之後點這一步、隨時跳回這個畫面";
+  d.onclick=()=>tourStep(i,true);
+}
 function tourPlay(){
   tourTimers.forEach(clearTimeout);tourTimers=[];
   dock.classList.remove("min");
-  TOUR.forEach((st,i)=>{
-    tourTimers.push(setTimeout(()=>{switchTab(st.tab);bubble("a",st.msg);},i*3000));
-  });
+  bubble("a","導覽開始 — 共 7 步、每步約 4.5 秒、對應畫面會亮起。每一步的說明都留在這裡、之後點任一步就能跳回那個畫面。");
+  TOUR.forEach((st,i)=>{tourTimers.push(setTimeout(()=>tourStep(i,false),900+i*4500));});
+  tourTimers.push(setTimeout(()=>bubble("a","導覽結束。上面 ①-⑦ 都可以點、隨時回去複習；想看全流程實跑就說「示範一次」。"),900+TOUR.length*4500));
 }
 
 /* 身份 */
@@ -783,6 +816,17 @@ function renderProducts(){
       <td><a class="nlink" href="${nURL(x.page_id)}" target="_blank">↗</a></td>`;
     tb.appendChild(tr);
   });
+  const tt=document.querySelector("#tptbl tbody");
+  if(tt){tt.innerHTML="";
+    (S.templates||[]).forEach(x=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td><b>${x.樣板名稱}</b></td><td>${x.類型||"—"}</td><td>${x.適用產品||"—"}</td>
+        <td><span class="st ${x.狀態==="可用"?"ok":"wt"}">${x.狀態||"—"}</span></td>
+        <td style="color:var(--ink2);font-size:12px">${(x.內容||"").slice(0,64)}…</td>
+        <td><a class="nlink" href="${nURL(x.page_id)}" target="_blank">↗</a></td>`;
+      tt.appendChild(tr);
+    });
+  }
 }
 document.getElementById("prAdd").onclick=async()=>{
   const name=document.getElementById("prName").value.trim();

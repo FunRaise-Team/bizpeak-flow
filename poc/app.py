@@ -91,6 +91,7 @@ def _bootstrap_data(force: bool = False) -> dict:
         "quotes_all": _safe(lambda: [{**q, "編輯連結": cap.QUOTE_EDIT + (q["page_id"] or "").replace("-", ""),
                                       "notion_url": cap.notion_url(q["page_id"])} for q in cap.quote_rows()], []),
         "products": _safe(cap.product_list, []),
+        "templates": _safe(cap.template_list, []),
         "comments": _safe(cap.comment_list, []),
         "renewals": _safe(cap.renewal_alerts, []),
         "order": states.ORDER,
@@ -294,6 +295,14 @@ TOOL_DECLS = [
      "parameters": {"type": "object", "properties": {"quote_no": {"type": "string"}, "terms": {"type": "integer"}, "first_due": {"type": "string"}}, "required": ["quote_no"]}},
     {"name": "product_list", "description": "產品目錄（顧問服務 / 標準產品 / 訂閱 / 客製、含建議單價）",
      "parameters": {"type": "object", "properties": {}}},
+    {"name": "product_create", "description": "產品目錄新增（人審動作）。ptype：顧問服務/標準產品/訂閱服務/客製專案/教育訓練；pricing：固定價/報價制/訂閱制",
+     "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "ptype": {"type": "string"}, "pricing": {"type": "string"}, "price": {"type": "number"}, "note": {"type": "string"}}, "required": ["name"]}},
+    {"name": "product_update", "description": "產品目錄修改（人審動作）— 上架/停售（status）、改建議單價（price）、改說明（note）",
+     "parameters": {"type": "object", "properties": {"name": {"type": "string"}, "status": {"type": "string"}, "price": {"type": "number"}, "note": {"type": "string"}}, "required": ["name"]}},
+    {"name": "quote_detail", "description": "報價單完整內容（項目明細與條款、編輯連結）",
+     "parameters": {"type": "object", "properties": {"quote_no": {"type": "string"}}, "required": ["quote_no"]}},
+    {"name": "template_list", "description": "樣板庫查詢（合約條款/報價條款/保密協議/催收信/信件範本）— 使用者要條款或範本文字時用",
+     "parameters": {"type": "object", "properties": {"ttype": {"type": "string"}}}},
     {"name": "comment_add", "description": "在某張合約上留言（會同步到 Notion 合約頁、留言人=目前操作者）",
      "parameters": {"type": "object", "properties": {"contract_id": {"type": "string"}, "content": {"type": "string"}}, "required": ["contract_id", "content"]}},
     {"name": "comment_list", "description": "查某張合約的留言（contract_id 空字串查全部）",
@@ -323,6 +332,8 @@ def sys_prompt(who: str = "使用者") -> str:
 - 使用者用客戶名稱指稱合約時、先用 contract_list 自行找到對應的合約編號再操作、不要反問使用者編號；只有同名多筆時才請使用者確認
 - 閉環規則：轉入 C4 會自動產生款項排程；C6 結案前款項必須全收（系統會擋）；C7 續約窗口用 contract_renew 開新約回 C0
 - 建約（contract_create）至少要客戶名與金額；期數與首期付款日沒講就用預設並在回覆說明
+- 產品目錄可增可改（product_create / product_update）；樣板庫（template_list）有合約條款、保密協議、催收信範本可直接給
+- 回覆一律用純文字加全形符號排版（可用 **粗體** 與「- 」清單、其餘 markdown 記號如 # 標題、表格、反引號都不要用）
 - 留言內容可用 @姓名 提及同事（會真的通知到人、如「@Kyle Lu 麻煩追一下」）
 - Co-Evo 報價（quote_create）：Starter 首年 22,800 / Growth 41,800（主推）/ Pro 68,800（皆未稅）；建立後把編輯連結給使用者；報價單簽回後用 quote_import 建約"""
 
@@ -341,12 +352,16 @@ CAP_FN = {
     "quote_import": cap.quote_import,
     "quote_create": cap.quote_create,
     "demo_lifecycle": cap.demo_lifecycle,
+    "product_create": cap.product_create,
+    "product_update": cap.product_update,
+    "quote_detail": cap.quote_detail,
+    "template_list": cap.template_list,
     "product_list": cap.product_list,
     "comment_add": cap.comment_add,
     "comment_list": cap.comment_list,
 }
 _SYS_WHO: dict = {}
-WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import", "comment_add", "quote_create", "demo_lifecycle"}
+WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import", "comment_add", "quote_create", "demo_lifecycle", "product_create", "product_update"}
 
 
 def _env_key(name: str) -> str:

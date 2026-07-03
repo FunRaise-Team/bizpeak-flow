@@ -142,6 +142,9 @@ def contract_create(customer: str, amount: float, terms: int = 1, first_due: str
     uid = owner_user_id(owner_name)
     if uid:
         props["負責人"] = {"people": [{"id": uid}]}
+    cpid = customer_page_id(customer.strip())
+    if cpid:
+        props["客戶連結"] = {"relation": [{"id": cpid}]}
     create_row(_contracts(), props)
     log_event(cid, f"建立合約（C0 報價草稿）：{customer}、{amount:,.0f}、{terms} 期", actor)
     return {"ok": True, "合約編號": cid, "狀態": "C0", "客戶": customer}
@@ -382,7 +385,7 @@ def quote_rows() -> list[dict]:
                 "page_id": r["id"],
                 "報價單號": rd("報價單號"), "客戶名稱": rd("客戶名稱"),
                 "狀態": rd("狀態"), "報價金額": rd("報價金額"), "優惠價": rd("優惠價"),
-                "報價負責人": rd("報價負責人"), "部門": rd("部門"),
+                "報價負責人": rd("報價負責人"), "部門": rd("部門"), "案型": rd("案型"),
                 "報價單連結": rd("報價單連結") or rd("審核連結"),
             })
         return out
@@ -422,7 +425,15 @@ def quote_import(quote_no: str, terms: int = 1, first_due: str = "", actor: str 
                         q["報價負責人"] or "", "", actor=actor)
     if not r.get("ok"):
         return r
-    log_event(r["合約編號"], f"報價單匯入 {quote_no} → 建約（{q['客戶名稱']}、{amount:,.0f}、負責人 {q['報價負責人']}）", actor)
+    cs = [c for c in contract_rows() if c["合約編號"] == r["合約編號"]]
+    if cs:
+        extra = {"來源報價單": text(quote_no)}
+        pname = CASE_TO_PRODUCT.get(q.get("案型") or "", "")
+        prods = {x["產品名稱"]: x["page_id"] for x in product_list()}
+        if pname and pname in prods:
+            extra["產品"] = {"relation": [{"id": prods[pname]}]}
+        update_row(cs[0]["page_id"], extra)
+    log_event(r["合約編號"], f"報價單匯入 {quote_no} → 建約（{q['客戶名稱']}、{amount:,.0f}、負責人 {q['報價負責人']}、案型 {q.get('案型') or '—'} 已對應產品）", actor)
     return {"ok": True, "合約編號": r["合約編號"], "報價單號": quote_no,
             "客戶": q["客戶名稱"], "金額": amount}
 
@@ -828,3 +839,102 @@ def demo_lifecycle(actor: str = "演示模式", cleanup: bool = True) -> dict:
                 api("PATCH", f"/pages/{e['id']}", {"in_trash": True}); cleaned += 1
         steps.append(f"⑪ 演示資料已清理（封存 {cleaned} 筆）— 系統回到演示前狀態")
     return {"ok": True, "steps": steps, "演示合約": demo_ids, "已清理": cleanup}
+
+
+# ── 產品增改 / 報價詳情 / 樣板庫 / 客戶關聯（v8、訪談封版輪） ──
+
+CASE_TO_PRODUCT = {  # 報價「案型」→ 產品目錄名（quote_import 自動掛產品）
+    "Co-Evo": "Co-Evo 智慧互動導航",
+    "智慧產權清冊助手": "智慧產權清冊助理",
+    "客製開發": "客製開發服務",
+    "媒體廣告": "媒體廣告服務",
+}
+
+
+def product_update(name: str, status: str = "", price: float | None = None,
+                   note: str = "", actor: str = "使用者") -> dict:
+    """產品目錄修改 — 上架/停售、改建議單價、改說明。"""
+    ps = [p for p in product_list() if p["產品名稱"] == name or name in (p["產品名稱"] or "")]
+    if not ps:
+        return {"error": f"找不到產品「{name}」"}
+    p = ps[0]
+    props = {}
+    changes = []
+    if status in ("上架", "停售"):
+        props["狀態"] = select(status); changes.append(f"狀態→{status}")
+    if price is not None:
+        props["建議單價"] = number(price); changes.append(f"建議單價→{price:,.0f}")
+    if note:
+        props["說明"] = text(note); changes.append("說明更新")
+    if not props:
+        return {"error": "沒有要改的欄位（可改：status 上架/停售、price、note）"}
+    update_row(p["page_id"], props)
+    _co_cache.pop("products", None)
+    log_event("", f"產品目錄修改：{p['產品名稱']}（{'、'.join(changes)}）", actor)
+    return {"ok": True, "產品名稱": p["產品名稱"], "變更": changes}
+
+
+def customer_page_id(name: str) -> str | None:
+    """客戶名 → 客戶大名單頁（供跨庫關聯）。"""
+    if not name:
+        return None
+    def fetch():
+        from notion_layer import api
+        out, cursor = {}, None
+        while True:
+            body = {"page_size": 100}
+            if cursor:
+                body["start_cursor"] = cursor
+            res = api("POST", f"/data_sources/{COMPANY_DS['customers']}/query", body)
+            for r in res["results"]:
+                nm = next(("".join(t.get("plain_text", "") for t in v["title"])
+                           for v in r["properties"].values() if v["type"] == "title"), "")
+                if nm:
+                    out[nm] = r["id"]
+            if not res.get("has_more"):
+                return out
+            cursor = res["next_cursor"]
+    m = _cached("cust_pages", 300, fetch)
+    if name in m:
+        return m[name]
+    for nm, pid in m.items():
+        if name in nm or nm in name:
+            return pid
+    return None
+
+
+def quote_detail(quote_no: str) -> dict:
+    """報價單完整內容（讀 v4 內容、含項目與條款）— 聊天可直接答報價內容。"""
+    qs = [q for q in quote_rows() if q["報價單號"] == quote_no]
+    if not qs:
+        return {"error": f"找不到報價單 {quote_no}"}
+    q = qs[0]
+    from notion_layer import api
+    blocks = api("GET", f"/blocks/{q['page_id']}/children?page_size=50")
+    content = ""
+    for b in blocks.get("results", []):
+        t = b["type"]
+        if t == "code":
+            content += "".join(r.get("plain_text", "") for r in b["code"]["rich_text"])
+        elif isinstance(b.get(t), dict) and "rich_text" in b[t]:
+            content += "".join(r.get("plain_text", "") for r in b[t]["rich_text"]) + "\n"
+    return {**{k: v for k, v in q.items() if k != "page_id"}, "內容": content[:4000],
+            "編輯連結": QUOTE_EDIT + q["page_id"].replace("-", "")}
+
+
+def template_list(ttype: str = "") -> list[dict]:
+    """樣板庫（合約條款 / 報價條款 / 保密協議 / 催收信 / 信件範本）。"""
+    def fetch():
+        out = []
+        for r in query_db(load_ids()["templates"]):
+            out.append({
+                "page_id": r["id"],
+                "樣板名稱": read_prop(r, "樣板名稱"), "類型": read_prop(r, "類型"),
+                "適用產品": read_prop(r, "適用產品"), "狀態": read_prop(r, "狀態"),
+                "內容": read_prop(r, "內容"),
+            })
+        return out
+    out = _cached("templates", 120, fetch)
+    if ttype:
+        out = [t for t in out if t["類型"] == ttype or ttype in (t["樣板名稱"] or "")]
+    return out
