@@ -41,6 +41,8 @@ def contract_rows(status: str | None = None) -> list[dict]:
             "生效日": read_prop(r, "生效日"),
             "到期日": read_prop(r, "到期日"),
             "狀態進入日": read_prop(r, "狀態進入日"),
+            "各期金額": read_prop(r, "各期金額"),
+            "來源報價單": read_prop(r, "來源報價單"),
         })
     out.sort(key=lambda c: c["合約編號"] or "")
     return out
@@ -116,19 +118,31 @@ def contract_get(contract_id: str) -> dict:
 
 
 def contract_create(customer: str, amount: float, terms: int = 1, first_due: str = "",
-                    owner: str = "", expiry: str = "", actor: str = "使用者") -> dict:
-    """建立合約（C0 報價草稿）— 閉環的起點。terms 期數、first_due 首期付款日。"""
+                    owner: str = "", expiry: str = "", actor: str = "使用者",
+                    per_term_amounts: str = "") -> dict:
+    """建立合約（C0 報價草稿）— 閉環的起點。per_term_amounts 各期金額（逗號分隔或百分比、可空=均分）。"""
     if not customer or not amount:
         return {"error": "客戶與金額為必填"}
     if terms < 1 or terms > 12:
         return {"error": "期數需在 1–12 之間"}
+    if per_term_amounts:
+        parsed = _parse_amounts(per_term_amounts, amount, terms)
+        if isinstance(parsed, dict):
+            return parsed
     cid = _next_contract_id()
-    create_row(_contracts(), {
+    owner_name = owner or actor.replace("（經助理）", "")
+    props = {
         "合約編號": title(cid), "客戶": text(customer), "狀態": select("C0"),
-        "負責業務": text(owner or actor), "金額": number(amount), "期數": number(terms),
+        "負責業務": text(owner_name), "金額": number(amount), "期數": number(terms),
         "首期日": date(first_due or None), "到期日": date(expiry or None),
         "狀態進入日": date(_date.today().isoformat()),
-    })
+    }
+    if per_term_amounts:
+        props["各期金額"] = text(per_term_amounts)
+    uid = owner_user_id(owner_name)
+    if uid:
+        props["負責人"] = {"people": [{"id": uid}]}
+    create_row(_contracts(), props)
     log_event(cid, f"建立合約（C0 報價草稿）：{customer}、{amount:,.0f}、{terms} 期", actor)
     return {"ok": True, "合約編號": cid, "狀態": "C0", "客戶": customer}
 
@@ -143,11 +157,17 @@ def payment_schedule_generate(contract_id: str, actor: str = "平台規則") -> 
     terms = int(c["期數"] or 1)
     amount = c["金額"] or 0
     first = c["首期日"] or _date.today().isoformat()
+    custom = []
+    raw = c.get("各期金額") or ""
+    if raw:
+        parsed = _parse_amounts(raw, amount, terms)
+        if isinstance(parsed, list) and parsed:
+            custom = parsed
     base = round(amount / terms, 0)
     d0 = _date.fromisoformat(first)
     made = []
     for i in range(terms):
-        amt = amount - base * (terms - 1) if i == terms - 1 else base
+        amt = custom[i] if custom else (amount - base * (terms - 1) if i == terms - 1 else base)
         due = d0 + timedelta(days=91 * i)
         pid = f"PM-{contract_id.split('-')[2]}-{i + 1}"
         create_row(_payments(), {
@@ -464,8 +484,8 @@ def comment_add(contract_id: str, content: str, actor: str = "使用者") -> dic
     notion_comment = False
     try:
         from notion_layer import api as _api
-        _api("POST", "/comments", {"parent": {"page_id": c["page_id"]},
-             "rich_text": [{"type": "text", "text": {"content": f"{actor}：{content.strip()}"}}]})
+        rich = [{"type": "text", "text": {"content": f"{actor}："}}] + mention_rich_text(content.strip())
+        _api("POST", "/comments", {"parent": {"page_id": c["page_id"]}, "rich_text": rich})
         notion_comment = True
     except RuntimeError:
         pass  # 整合未開留言能力 — 評論庫仍有完整記錄
@@ -688,3 +708,123 @@ def quote_create(customer: str, plan: str = "Growth", owner: str = "",
     log_event("", f"建立 Co-Evo 報價單 {qno}（{customer.strip()}、{plan}、未稅 {total:,}）", actor)
     return {"ok": True, "報價單號": qno, "客戶": comp, "方案": plan,
             "首年總計未稅": total, "編輯連結": QUOTE_EDIT + page["id"].replace("-", "")}
+
+
+# ── 人員屬性 / @ 提及 / 各期金額 / 演示模式（v7） ──
+
+def notion_users() -> dict:
+    """姓名 → Notion 使用者編號（艦員名冊姓名 ↔ workspace 成員互相比對）。快取 10 分鐘。"""
+    def fetch():
+        from notion_layer import api
+        out = {}
+        try:
+            res = api("GET", "/users?page_size=100")
+            for u in res.get("results", []):
+                if u.get("type") == "person" and u.get("name"):
+                    out[u["name"]] = u["id"]
+        except RuntimeError:
+            pass
+        return out
+    return _cached("nusers", 600, fetch)
+
+
+def owner_user_id(name: str) -> str | None:
+    """找同事對應的 Notion 使用者（全名互含比對、例「Kyle Lu」↔「呂哲源 Kyle Lu」）。"""
+    if not name:
+        return None
+    users = notion_users()
+    if name in users:
+        return users[name]
+    for un, uid in users.items():
+        if un and (un in name or name in un):
+            return uid
+    return None
+
+
+def mention_rich_text(content: str) -> list:
+    """把內容中的 @姓名 轉成 Notion 提及（真的會通知本人）；其餘保留文字。"""
+    import re
+    parts, last = [], 0
+    for m in re.finditer(r"@([\w一-鿿.\- ]{1,20}?)(?=[\s,，。;；!！?？@]|$)", content):
+        uid = owner_user_id(m.group(1).strip())
+        if not uid:
+            continue
+        if m.start() > last:
+            parts.append({"type": "text", "text": {"content": content[last:m.start()]}})
+        parts.append({"type": "mention", "mention": {"user": {"id": uid}}})
+        last = m.end()
+    if last < len(content):
+        parts.append({"type": "text", "text": {"content": content[last:]}})
+    return parts or [{"type": "text", "text": {"content": content}}]
+
+
+def _parse_amounts(amounts: str, total: float, terms: int) -> list[float] | dict:
+    """各期金額解析 —「300000,300000,400000」或「30%,30%,40%」；驗筆數與總和。"""
+    vals = [a.strip() for a in (amounts or "").replace("，", ",").split(",") if a.strip()]
+    if not vals:
+        return []
+    if len(vals) != terms:
+        return {"error": f"各期金額有 {len(vals)} 筆、但期數是 {terms} — 兩者要一致"}
+    try:
+        if all(v.endswith("%") for v in vals):
+            nums = [round(total * float(v[:-1]) / 100) for v in vals]
+            nums[-1] = total - sum(nums[:-1])
+        else:
+            nums = [float(v) for v in vals]
+    except ValueError:
+        return {"error": "各期金額格式：逗號分隔的數字（或百分比、如 30%,30%,40%）"}
+    if abs(sum(nums) - total) > 1:
+        return {"error": f"各期金額合計 {sum(nums):,.0f} ≠ 合約金額 {total:,.0f}"}
+    return nums
+
+
+def demo_lifecycle(actor: str = "演示模式", cleanup: bool = True) -> dict:
+    """完整流程演示 — 建一張【演示】合約走完全生命週期（含不均分款項、開票、收款、
+    守門展示、結案、續約開新約）、預設結束後全部清掉。給「教我怎麼用」的實地展示。"""
+    from datetime import timedelta as _td
+    steps: list[str] = []
+    demo_ids: list[str] = []
+    r = contract_create("【演示】示範客戶股份有限公司", 100000, 2,
+                        (_date.today() + _td(days=30)).isoformat(), actor, "", actor=actor)
+    if not r.get("ok"):
+        return r
+    cid = r["合約編號"]; demo_ids.append(cid)
+    steps.append(f"① 建約 {cid}（C0 報價草稿、10 萬、2 期）")
+    # 設定不均分：40% / 60%
+    cs = [c for c in contract_rows() if c["合約編號"] == cid][0]
+    update_row(cs["page_id"], {"各期金額": text("40000,60000")})
+    steps.append("② 設定各期金額 40,000 / 60,000（不均分、對應開票）")
+    for st, note in [("C1", "③ 送內部簽核"), ("C2", "④ 簽核完成、用印"), ("C3", "⑤ 寄出待客戶回簽")]:
+        contract_transition(cid, st, actor=actor)
+        steps.append(note)
+    r4 = contract_transition(cid, "C4", actor=actor)
+    made = (r4.get("schedule") or {}).get("produced", [])
+    steps.append(f"⑥ 回簽生效 → 自動產生款項排程 {len(made)} 期（金額照 40,000/60,000）")
+    gate = contract_transition(cid, "C5", actor=actor) and contract_transition(cid, "C6", actor=actor)
+    steps.append(f"⑦ 試著直接結案 → 被擋：「{gate.get('error', '')[:40]}…」（款項未收清不能結案）")
+    for i, p in enumerate([x for x in payment_rows() if x["合約編號"] == cid], 1):
+        payment_invoice(p["款項編號"], f"DEMO-{i:04d}", actor=actor)
+        payment_mark_paid(p["款項編號"], actor=actor)
+    steps.append("⑧ 逐期開發票、確認收款（兩期金額不同、發票各開各的）")
+    contract_transition(cid, "C6", actor=actor)
+    steps.append("⑨ 全收清 → 結案通過")
+    contract_transition(cid, "C7", actor=actor)
+    rn = contract_renew(cid, actor=actor)
+    new_id = rn.get("新約", "")
+    if new_id:
+        demo_ids.append(new_id)
+    steps.append(f"⑩ 續約窗口 → 一鍵開新約 {new_id}（條件沿用、回到 C0、閉環完成）")
+    cleaned = 0
+    if cleanup:
+        from notion_layer import api
+        for did in demo_ids:
+            for c in [x for x in contract_rows() if x["合約編號"] == did]:
+                api("PATCH", f"/pages/{c['page_id']}", {"in_trash": True}); cleaned += 1
+            for p in [x for x in payment_rows() if x["合約編號"] == did]:
+                api("PATCH", f"/pages/{p['page_id']}", {"in_trash": True}); cleaned += 1
+        from notion_layer import query_db
+        for e in query_db(load_ids()["events"]):
+            if (read_prop(e, "合約編號") or "") in demo_ids:
+                api("PATCH", f"/pages/{e['id']}", {"in_trash": True}); cleaned += 1
+        steps.append(f"⑪ 演示資料已清理（封存 {cleaned} 筆）— 系統回到演示前狀態")
+    return {"ok": True, "steps": steps, "演示合約": demo_ids, "已清理": cleanup}

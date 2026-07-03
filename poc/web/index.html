@@ -302,6 +302,7 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
         <div><label>首期付款日</label><input id="fFirst" type="date"></div>
       </div>
       <div><label>負責業務</label><input id="fOwner" list="dlStaff" placeholder="輸入或選擇"><datalist id="dlStaff"></datalist></div>
+      <div><label>各期金額（可空＝均分；逗號分隔、支援百分比 — 例 40000,60000 或 30%,30%,40%）</label><input id="fSplit" placeholder="回簽生效時照此拆分產生款項與開票"></div>
     </div>
     <div class="qsec" id="qsec">
       <div class="lb2">或、從已簽約報價單一鍵建立</div>
@@ -488,7 +489,7 @@ function openDrawer(cid,scroll=true){
     <div class="dsec"><b class="lb">款項（${pays.length}）</b>${payHtml}</div>
     <div class="dsec"><b class="lb">留言（${cms.length}）</b>${cmHtml}
       <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="cmIn" placeholder="留言給這張合約（會同步到 Notion 頁）" style="flex:1;font-family:var(--sans);font-size:12.5px;border:1px solid var(--hair2);padding:7px 10px;outline:none">
+        <input id="cmIn" placeholder="留言（可 @同事名 提及、會同步 Notion 並通知）" style="flex:1;font-family:var(--sans);font-size:12.5px;border:1px solid var(--hair2);padding:7px 10px;outline:none" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.keyCode!==229)sendComment('${cid}')">
         <button class="act pri" onclick="sendComment('${cid}')">送出</button>
       </div></div>
     <div class="dsec"><details><summary style="font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink3);cursor:pointer;margin-bottom:7px">操作紀錄（${evs.length}）— 點開</summary>${evHtml}</details></div>`;
@@ -661,7 +662,7 @@ document.getElementById("newSubmit").onclick=async()=>{
   const first=document.getElementById("fFirst").value;
   const owner=document.getElementById("fOwner").value.trim();
   if(!cust||!amt){document.getElementById("fErr").textContent="客戶與金額為必填";return;}
-  const d=await api("/api/create",{customer:cust,amount:amt,terms:terms,first_due:first,owner:owner});
+  const d=await api("/api/create",{customer:cust,amount:amt,terms:terms,first_due:first,owner:owner,per_term_amounts:document.getElementById("fSplit").value.trim()});
   if(d.error){document.getElementById("fErr").textContent=d.error;return;}
   ov.classList.remove("on");
   await loadData();switchTab("overview");highlight(d.合約編號);
@@ -686,7 +687,15 @@ document.getElementById("roleSel").onchange=e=>{
 const dock=document.getElementById("dock"),msgs=document.getElementById("dockMsgs");
 document.getElementById("dockHead").onclick=()=>dock.classList.toggle("min");
 document.getElementById("aiToggle").onclick=()=>dock.classList.toggle("min");
-function bubble(cls,text){const d=document.createElement("div");d.className="b "+cls;d.textContent=text;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;return d;}
+function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function mdLite(t){
+  return esc(t).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").split("\n").map(l=>{
+    const m=l.match(/^\s*[-*]\s+(.*)$/);return m?"・"+m[1]:l;
+  }).join("\n");
+}
+function bubble(cls,text){const d=document.createElement("div");d.className="b "+cls;
+  if(cls.includes("a")&&!cls.includes("think"))d.innerHTML=mdLite(text);else d.textContent=text;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;return d;}
 async function sendChat(){
   const inp=document.getElementById("chatIn");const t=inp.value.trim();if(!t)return;
   inp.value="";bubble("u",t);hist.push({role:"user",text:t});
@@ -696,11 +705,30 @@ async function sendChat(){
     const d=await r.json();
     th.remove();bubble("a",d.reply);hist.push({role:"model",text:d.reply});
     if(d.refresh)await loadData();
-    (d.actions||[]).forEach(a=>{if(a.tab)switchTab(a.tab);if(a.highlight)setTimeout(()=>highlight(a.highlight),150);});
+    (d.actions||[]).forEach(a=>{
+      if(a.tour){tourPlay();return;}
+      if(a.tab)switchTab(a.tab);if(a.highlight)setTimeout(()=>highlight(a.highlight),150);});
   }catch(e){th.textContent="連線失敗、請重試（"+e+"）";}
 }
 document.getElementById("chatSend").onclick=sendChat;
-document.getElementById("chatIn").addEventListener("keydown",e=>{if(e.key==="Enter")sendChat();});
+document.getElementById("chatIn").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing&&e.keyCode!==229)sendChat();});
+
+/* 系統導覽 */
+const TOUR=[
+ {tab:"overview",msg:"① 合約總覽 — 每張合約的狀態、負責人、處理時限一眼看。上排是各負責人的載量、黃條是續約提醒。點任一列開詳情面板：生命週期、款項、留言、操作都在裡面。"},
+ {tab:"quotes",msg:"② 報價 — 全公司報價單同一份。「＋ 新 Co-Evo 報價」直接產單（也可以跟我說「幫○○報 Growth」）；狀態變「已簽約」後按「建約」、自動進入合約流程。"},
+ {tab:"payments",msg:"③ 收款 — 回簽生效時系統自動產生款項排程（支援各期不同金額）。開發票、確認收款都在這、按下就寫回 Notion。"},
+ {tab:"overdue",msg:"④ 逾期 — 過期未收自動標記、第一天就浮現。催收節奏：3 天提醒業務、7 天起草催收信、30 天升級主管。"},
+ {tab:"calendar",msg:"⑤ 日曆 — 款項落在預計付款日、合約落在到期日、點任一項直開該合約。"},
+ {tab:"cashflow",msg:"⑥ 現金流 — 未收款按月彙總、管理層視角的核心數字。想看完整流程實跑一遍、跟我說「示範一次」— 我會建一張演示合約從報價走到續約、結束自動清掉。"}];
+let tourTimers=[];
+function tourPlay(){
+  tourTimers.forEach(clearTimeout);tourTimers=[];
+  dock.classList.remove("min");
+  TOUR.forEach((st,i)=>{
+    tourTimers.push(setTimeout(()=>{switchTab(st.tab);bubble("a",st.msg);},i*3000));
+  });
+}
 
 /* 身份 */
 function whoLabel(){document.getElementById("whoBtn").textContent="◉ "+(actor||"未選身份");}

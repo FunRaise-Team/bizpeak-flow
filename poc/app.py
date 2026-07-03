@@ -165,12 +165,14 @@ class CreateReq(BaseModel):
     first_due: str = ""
     owner: str = ""
     expiry: str = ""
+    per_term_amounts: str = ""
 
 
 @app.post("/api/create")
 def create(req: CreateReq, request: Request):
     r = cap.contract_create(req.customer, req.amount, req.terms, req.first_due,
-                            req.owner, req.expiry, actor=_actor(request))
+                            req.owner, req.expiry, actor=_actor(request),
+                            per_term_amounts=req.per_term_amounts)
     if r.get("ok"):
         _invalidate()
     return r
@@ -274,11 +276,12 @@ TOOL_DECLS = [
      "parameters": {"type": "object", "properties": {"payment_id": {"type": "string"}}, "required": ["payment_id"]}},
     {"name": "cashflow_forecast", "description": "未收款按月彙總（現金流量預測）",
      "parameters": {"type": "object", "properties": {}}},
-    {"name": "contract_create", "description": "建立合約（C0 報價草稿、閉環起點）。需客戶名與金額；期數 1-12、首期付款日 YYYY-MM-DD",
+    {"name": "contract_create", "description": "建立合約（C0 報價草稿、閉環起點）。需客戶名與金額；期數 1-12、首期付款日 YYYY-MM-DD；per_term_amounts 各期金額（逗號分隔數字或百分比、如「40000,60000」或「30%,30%,40%」、可空=均分）",
      "parameters": {"type": "object", "properties": {
          "customer": {"type": "string"}, "amount": {"type": "number"},
          "terms": {"type": "integer"}, "first_due": {"type": "string"},
-         "owner": {"type": "string"}, "expiry": {"type": "string"}}, "required": ["customer", "amount"]}},
+         "owner": {"type": "string"}, "expiry": {"type": "string"},
+         "per_term_amounts": {"type": "string"}}, "required": ["customer", "amount"]}},
     {"name": "payment_invoice", "description": "開立發票（P0/P4 → P1）、發票號必填（人審動作、使用者明確要求才可呼叫）",
      "parameters": {"type": "object", "properties": {"payment_id": {"type": "string"}, "invoice_no": {"type": "string"}}, "required": ["payment_id", "invoice_no"]}},
     {"name": "contract_renew", "description": "續約開新約（原約需在 C7 續約窗口）、新約沿用條件回 C0（人審動作）",
@@ -297,6 +300,10 @@ TOOL_DECLS = [
      "parameters": {"type": "object", "properties": {"contract_id": {"type": "string"}}}},
     {"name": "quote_create", "description": "建立 Co-Evo 報價單（寫入公司報價庫、回編輯連結）。plan = Starter / Growth / Pro；discount_untaxed 為議價未稅金額（會自動 ×1.05 換含稅）。人審動作、使用者明確要求才可呼叫",
      "parameters": {"type": "object", "properties": {"customer": {"type": "string"}, "plan": {"type": "string"}, "owner": {"type": "string"}, "discount_untaxed": {"type": "number"}}, "required": ["customer"]}},
+    {"name": "demo_lifecycle", "description": "完整流程演示 — 建一張【演示】合約走完全生命週期（含不均分款項、開票收款、守門、續約開新約）、結束自動清理。使用者說「示範一次」「跑一次流程給我看」「教我怎麼用（想看實際操作）」時呼叫。耗時約 30 秒、先告知使用者再呼叫",
+     "parameters": {"type": "object", "properties": {"cleanup": {"type": "boolean"}}}},
+    {"name": "ui_tour", "description": "系統導覽 — 前端逐頁帶使用者認識介面（總覽→詳情→報價→收款→日曆→助理）。使用者問「怎麼用」「有哪些功能」時呼叫",
+     "parameters": {"type": "object", "properties": {}}},
     {"name": "ui_navigate", "description": "切換使用者眼前的介面頁籤、可高亮某編號。回答涉及某頁籤資料時呼叫、讓使用者直接看到",
      "parameters": {"type": "object", "properties": {
          "tab": {"type": "string", "enum": ["overview", "payments", "overdue", "calendar", "cashflow", "quotes", "products", "events"]},
@@ -316,6 +323,7 @@ def sys_prompt(who: str = "使用者") -> str:
 - 使用者用客戶名稱指稱合約時、先用 contract_list 自行找到對應的合約編號再操作、不要反問使用者編號；只有同名多筆時才請使用者確認
 - 閉環規則：轉入 C4 會自動產生款項排程；C6 結案前款項必須全收（系統會擋）；C7 續約窗口用 contract_renew 開新約回 C0
 - 建約（contract_create）至少要客戶名與金額；期數與首期付款日沒講就用預設並在回覆說明
+- 留言內容可用 @姓名 提及同事（會真的通知到人、如「@Kyle Lu 麻煩追一下」）
 - Co-Evo 報價（quote_create）：Starter 首年 22,800 / Growth 41,800（主推）/ Pro 68,800（皆未稅）；建立後把編輯連結給使用者；報價單簽回後用 quote_import 建約"""
 
 CAP_FN = {
@@ -332,12 +340,13 @@ CAP_FN = {
     "quote_ready_list": cap.quote_ready_list,
     "quote_import": cap.quote_import,
     "quote_create": cap.quote_create,
+    "demo_lifecycle": cap.demo_lifecycle,
     "product_list": cap.product_list,
     "comment_add": cap.comment_add,
     "comment_list": cap.comment_list,
 }
 _SYS_WHO: dict = {}
-WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import", "comment_add", "quote_create"}
+WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import", "comment_add", "quote_create", "demo_lifecycle"}
 
 
 def _env_key(name: str) -> str:
@@ -437,6 +446,9 @@ def chat(req: ChatReq, request: Request):
             if name == "ui_navigate":
                 actions.append(args)
                 result = {"ok": True}
+            elif name == "ui_tour":
+                actions.append({"tour": True})
+                result = {"ok": True, "note": "導覽已在使用者介面啟動、你可以簡短補一句「導覽開始了」"}
             elif name in CAP_FN:
                 try:
                     if name in WRITE_FNS:
