@@ -465,7 +465,7 @@ def chat(req: ChatReq, request: Request):
                 for h in req.history[-8:] if h.get("text")]
     contents.append({"role": "user", "parts": [{"text": req.message}]})
     actions, refresh = [], False
-    last_results = []
+    last_results, empty_retries = [], 0
 
     for _ in range(6):
         try:
@@ -475,7 +475,11 @@ def chat(req: ChatReq, request: Request):
         parts = (res.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
         calls = [p["functionCall"] for p in parts if "functionCall" in p]
         if not calls:
-            reply = "".join(p.get("text", "") for p in parts) or _fmt_fallback(last_results)
+            reply = "".join(p.get("text", "") for p in parts)
+            if not reply and not last_results and empty_retries < 2:
+                empty_retries += 1          # 第一輪就空（安全過濾/免費層抖動）→ 原句重打
+                continue
+            reply = reply or _fmt_fallback(last_results)
             return {"reply": reply, "actions": actions, "refresh": refresh}
 
         contents.append({"role": "model", "parts": parts})
