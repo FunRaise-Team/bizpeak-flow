@@ -3,4 +3,4 @@ name = "bizpeak-flow-poc"
 version = "0.1.0"
 description = "BizPeak Flow POC — 能力層 + Notion 資料層 + MCP 伺服器（正式版技術棧由 RD 定案、本 POC 驗證概念）"
 requires-python = ">=3.10"
-dependencies = ["mcp>=1.2.0"]
+dependencies = ["mcp>=1.2.0", "fastapi>=0.115", "uvicorn>=0.30"]

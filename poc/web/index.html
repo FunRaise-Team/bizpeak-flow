@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizPeak Flow — 合約生命週期（POC）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FCFCFA;--ink:#26261F;--ink2:#6B6B62;--ink3:#9C9C92;
+  --hair:#E3E3DC;--hair2:#D2D2C8;--acc:#B8930A;--accbg:#FAC800;--wash:#FBF6E2;
+  --ok:#3E7D5B;--bad:#A4382E;
+  --mono:'JetBrains Mono',ui-monospace,monospace;--sans:'Noto Sans TC',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.6;}
+.mono{font-family:var(--mono);font-feature-settings:'tnum';}
+
+.top{position:sticky;top:0;z-index:20;height:48px;background:#fff;border-bottom:1px solid var(--hair2);display:flex;align-items:center;gap:26px;padding:0 22px;}
+.top .brand{font-weight:900;font-size:15px;}
+.top .brand i{font-style:normal;color:var(--acc);}
+.top .brand small{font-family:var(--mono);font-size:9px;color:var(--ink3);margin-left:8px;letter-spacing:.12em;}
+.tabs{display:flex;gap:2px;height:48px;}
+.tabs button{font-family:var(--sans);font-size:13.5px;border:none;background:none;padding:0 14px;cursor:pointer;color:var(--ink3);}
+.tabs button.on{color:var(--ink);font-weight:700;box-shadow:inset 0 -2px 0 var(--accbg);}
+.top .sync{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink3);}
+.top .aibtn{font-family:var(--sans);font-size:12.5px;font-weight:700;border:1px solid var(--ink);background:var(--accbg);padding:6px 14px;cursor:pointer;}
+
+.wrap{max-width:1200px;margin:0 auto;padding:22px;}
+.pane{display:none;}
+.pane.on{display:block;}
+.statbar{display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+.stat{border:1px solid var(--hair2);background:#fff;padding:12px 18px;min-width:150px;}
+.stat b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink3);font-weight:500;margin-bottom:2px;}
+.stat span{font-family:var(--mono);font-size:20px;font-weight:500;}
+.stat span.bad{color:var(--bad);}
+
+table.g{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--hair2);font-size:13px;}
+table.g th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink3);font-weight:500;text-align:left;padding:9px 14px;border-bottom:1px solid var(--hair2);background:#FAFAF7;}
+table.g td{padding:10px 14px;border-bottom:1px solid var(--hair);vertical-align:middle;}
+table.g tr:last-child td{border-bottom:none;}
+table.g tr.row{cursor:pointer;}
+table.g tr.row:hover td{background:var(--wash);}
+table.g tr.hl td{animation:hl 1s ease 2;}
+@keyframes hl{50%{background:var(--accbg);}}
+.st{font-family:var(--mono);font-size:11px;padding:2px 7px;border:1px solid var(--hair2);white-space:nowrap;}
+.st.ok{color:var(--ok);border-color:#BFD6C9;}
+.st.wt{color:var(--ink2);}
+.st.lt{color:var(--bad);border-color:#E0BBB6;font-weight:500;}
+.amt{text-align:right;font-family:var(--mono);}
+button.act{font-family:var(--sans);font-size:12px;font-weight:500;border:1px solid var(--ink);background:#fff;padding:4px 12px;cursor:pointer;}
+button.act:hover{background:var(--ink);color:#fff;}
+button.act:disabled{border-color:var(--hair2);color:var(--ink3);pointer-events:none;}
+button.act.pri{background:var(--accbg);border-color:var(--accbg);font-weight:700;}
+button.act.pri:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
+
+.detail td{background:#FAFAF7;}
+.track{display:flex;align-items:center;padding:6px 0 10px;}
+.track .nd{width:26px;height:26px;border:1px solid var(--hair2);background:#fff;font-family:var(--mono);font-size:9.5px;display:flex;align-items:center;justify-content:center;color:var(--ink3);flex:none;}
+.track .nd.pass{background:var(--ink);border-color:var(--ink);color:#fff;}
+.track .nd.cur{background:var(--accbg);border-color:var(--accbg);color:var(--ink);font-weight:700;}
+.track .ln{height:1px;background:var(--hair2);width:34px;}
+.track .ln.pass{background:var(--ink);}
+.subrow{font-size:12.5px;color:var(--ink2);}
+.dnote{font-size:12px;color:var(--ink3);margin-top:6px;}
+
+.empty{border:1px dashed var(--hair2);background:#fff;padding:26px;text-align:center;color:var(--ink3);font-size:13px;}
+
+/* 聊天框（體驗 1.5） */
+.dock{position:fixed;right:18px;bottom:18px;width:340px;border:1px solid var(--ink);background:#fff;box-shadow:0 10px 36px rgba(38,38,31,.16);display:flex;flex-direction:column;z-index:40;}
+.dock.min{height:auto;}
+.dock.min .dm,.dock.min .di{display:none;}
+.dock .dh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--hair);cursor:pointer;background:#fff;}
+.dock.min .dh{border-bottom:none;}
+.dock .dh .sig{width:9px;height:9px;background:var(--accbg);flex:none;}
+.dock .dh b{font-size:12.5px;}
+.dock .dh .mono{margin-left:auto;font-size:9px;color:var(--ink3);}
+.dock .dm{padding:12px;display:flex;flex-direction:column;gap:9px;height:320px;overflow-y:auto;}
+.dock .b{max-width:90%;font-size:12.5px;line-height:1.6;padding:7px 11px;white-space:pre-wrap;}
+.dock .b.u{align-self:flex-end;background:var(--ink);color:var(--paper);}
+.dock .b.a{align-self:flex-start;border:1px solid var(--hair);}
+.dock .b.think{color:var(--ink3);border-style:dashed;}
+.dock .di{border-top:1px solid var(--hair);display:flex;gap:8px;padding:9px 10px;}
+.dock .di input{flex:1;font-family:var(--sans);font-size:12.5px;border:1px solid var(--hair2);padding:7px 10px;outline:none;}
+.dock .di input:focus{border-color:var(--accbg);}
+.dock .di button{font-family:var(--sans);font-size:12.5px;font-weight:700;border:1px solid var(--accbg);background:var(--accbg);padding:0 14px;cursor:pointer;}
+@media(max-width:640px){.dock{left:12px;right:12px;width:auto;}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <span class="brand">BizPeak <i>Flow</i><small>POC</small></span>
+  <div class="tabs">
+    <button class="on" data-t="overview">合約總覽</button>
+    <button data-t="payments">收款</button>
+    <button data-t="overdue">逾期</button>
+    <button data-t="events">事件</button>
+  </div>
+  <span class="sync" id="sync">同步中…</span>
+  <button class="aibtn" id="aiToggle">助理</button>
+</div>
+
+<div class="wrap">
+  <div class="pane on" data-p="overview">
+    <div class="statbar" id="stats"></div>
+    <table class="g" id="ctbl">
+      <thead><tr><th>合約</th><th>客戶</th><th>狀態</th><th>負責業務</th><th>到期日</th><th style="text-align:right">金額</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="dnote">點合約列展開生命週期與款項；「推進」走狀態機驗證、每次轉移落事件庫。</p>
+  </div>
+
+  <div class="pane" data-p="payments">
+    <table class="g" id="ptbl">
+      <thead><tr><th>款項</th><th>合約</th><th>期數</th><th>發票號</th><th>預計付款日</th><th style="text-align:right">金額</th><th>狀態</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="dnote">「確認收款」是人審動作 — 按下即寫回 Notion 並留痕。</p>
+  </div>
+
+  <div class="pane" data-p="overdue">
+    <div class="statbar" id="odstats"></div>
+    <table class="g" id="odtbl">
+      <thead><tr><th>款項</th><th>合約</th><th>預計付款日</th><th>逾期天數</th><th style="text-align:right">金額</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="pane" data-p="events">
+    <table class="g" id="etbl">
+      <thead><tr><th>時間</th><th>事件</th><th>合約</th><th>動作</th><th>執行者</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="dnote">每個狀態變化都留痕（憲法第五條）— 教育訓練成本與離職風險的解方就是落檔。</p>
+  </div>
+</div>
+
+<div class="dock" id="dock">
+  <div class="dh" id="dockHead"><span class="sig"></span><b>BizPeak Flow 助理</b><span class="mono">看得懂整個系統 · 體驗 1.5</span></div>
+  <div class="dm" id="dockMsgs">
+    <div class="b a">你好、我看得到系統裡的合約與款項。可以問我「哪些款項逾期」、或直接說「祥豐那張推進到下一步」。</div>
+  </div>
+  <div class="di">
+    <input id="chatIn" placeholder="說一句話、介面自己動…">
+    <button id="chatSend">送出</button>
+  </div>
+</div>
+
+<script>
+let S=null;                 // bootstrap 資料
+let openRow=null;           // 展開的合約
+const hist=[];              // 聊天歷史
+
+const fmt=n=>n==null?"—":Number(n).toLocaleString("zh-Hant-TW");
+const stCls=s=>s==="C5"||s==="C4"||s==="P3"?"ok":(s==="P4"?"lt":"wt");
+
+async function loadData(){
+  const r=await fetch("/api/bootstrap");S=await r.json();
+  document.getElementById("sync").textContent="資料同步 Notion "+S.synced_at;
+  renderAll();
+}
+function renderAll(){renderOverview();renderPayments();renderOverdue();renderEvents();}
+
+function renderOverview(){
+  const act=S.contracts.filter(c=>!["C6","X1","X2"].includes(c.狀態));
+  document.getElementById("stats").innerHTML=
+    `<div class="stat"><b>進行中合約</b><span>${act.length}</span></div>
+     <div class="stat"><b>未收合計</b><span>${fmt(S.cashflow.未收合計)}</span></div>
+     <div class="stat"><b>其中逾期</b><span class="${S.cashflow.其中逾期>0?"bad":""}">${fmt(S.cashflow.其中逾期)}</span></div>
+     <div class="stat"><b>逾期筆數</b><span class="${S.overdue.length>0?"bad":""}">${S.overdue.length}</span></div>`;
+  const tb=document.querySelector("#ctbl tbody");tb.innerHTML="";
+  S.contracts.forEach(c=>{
+    const tr=document.createElement("tr");
+    tr.className="row";tr.dataset.key=c.合約編號;
+    const nxt=(S.states[c.狀態]?.next||[]).filter(x=>!x.startsWith("X"))[0];
+    tr.innerHTML=`<td class="mono">${c.合約編號}</td><td>${c.客戶}</td>
+      <td><span class="st ${stCls(c.狀態)}">${c.狀態} ${c.狀態名||""}</span></td>
+      <td>${c.負責業務||"—"}</td><td class="mono">${c.到期日||"—"}</td>
+      <td class="amt">${fmt(c.金額)}</td>
+      <td>${nxt&&nxt!=="C0"?`<button class="act" onclick="event.stopPropagation();doTransition('${c.合約編號}','${nxt}')">推進 → ${nxt}</button>`:""}</td>`;
+    tr.onclick=()=>toggleRow(c.合約編號);
+    tb.appendChild(tr);
+    if(openRow===c.合約編號)tb.appendChild(detailRow(c));
+  });
+}
+function detailRow(c){
+  const tr=document.createElement("tr");tr.className="detail";
+  const pays=S.payments.filter(p=>p.合約編號===c.合約編號);
+  let track='<div class="track">';
+  S.order.forEach((st,i)=>{
+    const idx=S.order.indexOf(c.狀態);
+    const cls=i<idx?"pass":(i===idx?"cur":"");
+    track+=`<span class="nd ${cls}">${st}</span>`+(i<S.order.length-1?`<span class="ln ${i<idx?"pass":""}"></span>`:"");
+  });
+  track+="</div>";
+  const rows=pays.map(p=>`<div class="subrow mono">${p.款項編號} · ${p.期數} 期 · ${p.預計付款日||"—"} · ${fmt(p.金額)} · ${p.狀態}${p.實收日?" 實收 "+p.實收日:""}</div>`).join("")||'<div class="subrow">（尚無款項排程 — 回簽生效後自動產生）</div>';
+  tr.innerHTML=`<td colspan="7">${track}${rows}</td>`;
+  return tr;
+}
+function toggleRow(id){openRow=openRow===id?null:id;renderOverview();}
+
+function renderPayments(){
+  const tb=document.querySelector("#ptbl tbody");tb.innerHTML="";
+  S.payments.forEach(p=>{
+    const tr=document.createElement("tr");tr.dataset.key=p.款項編號;
+    tr.innerHTML=`<td class="mono">${p.款項編號}</td><td class="mono">${p.合約編號}</td>
+      <td class="mono">${p.期數}</td><td class="mono">${p.發票號||"—"}</td>
+      <td class="mono">${p.預計付款日||"—"}</td><td class="amt">${fmt(p.金額)}</td>
+      <td><span class="st ${stCls(p.狀態)}">${p.狀態}${p.實收日?" · "+p.實收日:""}</span></td>
+      <td>${p.狀態!=="P3"?`<button class="act pri" onclick="doPaid('${p.款項編號}')">確認收款</button>`:""}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function renderOverdue(){
+  document.getElementById("odstats").innerHTML=
+    `<div class="stat"><b>逾期筆數</b><span class="${S.overdue.length?"bad":""}">${S.overdue.length}</span></div>
+     <div class="stat"><b>逾期金額</b><span class="${S.overdue.length?"bad":""}">${fmt(S.overdue.reduce((a,p)=>a+(p.金額||0),0))}</span></div>`;
+  const tb=document.querySelector("#odtbl tbody");tb.innerHTML="";
+  if(!S.overdue.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--ink3)">目前沒有逾期款項</td></tr>';return;}
+  S.overdue.forEach(p=>{
+    const tr=document.createElement("tr");tr.dataset.key=p.款項編號;
+    tr.innerHTML=`<td class="mono">${p.款項編號}</td><td class="mono">${p.合約編號}</td>
+      <td class="mono">${p.預計付款日}</td><td class="mono" style="color:var(--bad);font-weight:500">D+${p.逾期天數}</td>
+      <td class="amt">${fmt(p.金額)}</td>
+      <td><button class="act pri" onclick="doPaid('${p.款項編號}')">確認收款</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function renderEvents(){
+  const tb=document.querySelector("#etbl tbody");tb.innerHTML="";
+  if(!S.events.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--ink3)">尚無事件</td></tr>';return;}
+  S.events.forEach(e=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="mono">${e.時間||"—"}</td><td class="mono">${e.事件}</td>
+      <td class="mono">${e.合約編號||"—"}</td><td>${e.動作}</td><td>${e.執行者}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+async function doTransition(id,to){
+  if(!confirm(`把 ${id} 推進到 ${to}（${S.states[to]?.name||""}）？`))return;
+  const r=await fetch("/api/transition",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contract_id:id,to_state:to})});
+  const d=await r.json();
+  if(d.error)alert(d.error);
+  await loadData();highlight(id);
+}
+async function doPaid(id){
+  if(!confirm(`確認 ${id} 已收款？（會寫回 Notion 並留痕）`))return;
+  const r=await fetch("/api/mark_paid",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({payment_id:id})});
+  const d=await r.json();
+  if(d.error)alert(d.error);
+  await loadData();highlight(id);
+}
+
+function switchTab(t){
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.dataset.p===t));
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>switchTab(b.dataset.t));
+function highlight(key){
+  document.querySelectorAll(`tr[data-key="${key}"]`).forEach(tr=>{tr.classList.remove("hl");void tr.offsetWidth;tr.classList.add("hl");});
+}
+
+/* 聊天框（體驗 1.5） */
+const dock=document.getElementById("dock"),msgs=document.getElementById("dockMsgs");
+document.getElementById("dockHead").onclick=()=>dock.classList.toggle("min");
+document.getElementById("aiToggle").onclick=()=>dock.classList.toggle("min");
+function bubble(cls,text){const d=document.createElement("div");d.className="b "+cls;d.textContent=text;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;return d;}
+async function sendChat(){
+  const inp=document.getElementById("chatIn");const t=inp.value.trim();if(!t)return;
+  inp.value="";bubble("u",t);hist.push({role:"user",text:t});
+  const th=bubble("a think","助理處理中…");
+  try{
+    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:t,history:hist.slice(0,-1)})});
+    const d=await r.json();
+    th.remove();bubble("a",d.reply);hist.push({role:"model",text:d.reply});
+    if(d.refresh)await loadData();
+    (d.actions||[]).forEach(a=>{if(a.tab)switchTab(a.tab);if(a.highlight)setTimeout(()=>highlight(a.highlight),150);});
+  }catch(e){th.textContent="連線失敗、請重試（"+e+"）";}
+}
+document.getElementById("chatSend").onclick=sendChat;
+document.getElementById("chatIn").addEventListener("keydown",e=>{if(e.key==="Enter")sendChat();});
+
+loadData();
+</script>
+</body>
+</html>

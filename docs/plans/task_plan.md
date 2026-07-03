@@ -51,10 +51,17 @@
 - [x] 路線圖壓縮：本週定稿 → 下週 1.0 上線 → 7 月中 dogfooding → 8 月 MCP 化＋商轉評估 → 9 月產品化
 - [x] SPEC §8/§11、ARCHITECTURE §2 同步；Notion v0.3 換版（舊 49 塊封存、新 51 塊）；Vercel 重部署外部驗證 200
 
+### Phase 3.7: v0.4 輪（2026-07-02 深夜、公開＋轉移＋泳道＋POC）
+- [x] 研究檔清洗：內部盤點三份分流 docs/research-internal/（gitignore）、`ARCHITECTURE.md` 認證細節中性化、全庫敏感詞複掃 0
+- [x] git 歷史重建（單一乾淨提交）→ repo 轉 public、匿名可讀驗證
+- [x] 提案 §7 轉移與嵌入：雙態滑動圖（13 節點、借鏡尊鴻 blueprint）＋去留表＋三步導入；docs/MIGRATION.md
+- [x] 提案 §8 Agentic 作業泳道：6 泳道 × 6 階段、可播放閉環、資料落庫標示 — 互動全數實測
+- [x] POC：poc/（狀態機＋Notion 層＋四庫建置＋MCP 六工具）、驗收 PASS、已掛 Claude Code（✓ Connected）
+- [x] Notion v0.4（14 章節、59 塊）＋ Vercel 部署外部驗證 v0.4
+
 ### Phase 4: 拍板後才動（不在本次範圍）
 - [ ] 使用者訪談（Ting / Glendy / Carol）→ 規格細化
 - [ ] 體驗 1.0 開發（Allen 主導搭建、Jaric 技術、拉兩位 RD）
-- [ ] repo 轉 public 前清洗 docs/research/ 敏感內容（客戶名、應收款）
 - [ ] 提案頁搬公司 Vercel 帳號（需 Nelsen 登入）
 
 ---
@@ -76,4 +83,4 @@
 ---
 
 ## Next Action
-Nelsen 拍板七題後 → 波次 0 啟動：Carol 排訪談（Ting / Glendy）、確認 NuEIP API 能力、對齊 funraise-sales-skills 報價單輸出格式。
+本週：Carol 排訪談（Ting / Glendy、用 docs/MIGRATION.md §4 清單）＋ Jaric × RD 技術棧定案 → 下週體驗 1.0 上線（概念驗證的能力層與狀態機直接沿用）。
