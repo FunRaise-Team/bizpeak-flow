@@ -7,7 +7,7 @@ from pathlib import Path
 
 PAGE_ID = "c97d47abdd164fc7a26bd0e206132705"
 MARKER = "Flow 立項提案"
-VERSION = "BizPeak Flow 立項提案 v0.6"
+VERSION = "BizPeak Flow 立項提案 v0.7"
 SITE = "https://bizpeak-flow-proposal.vercel.app"
 REPO = "https://github.com/FunRaise-Team/bizpeak-flow"
 
@@ -90,7 +90,7 @@ b1 = [
     h1(VERSION),
     callout([rt("從報價單產生的那一刻、到收款與續約的完整閉環。", bold=True),
              rt("電子簽核、合約管理、催收自動化 — 公司工作流「主幹道」的第一段路、BizPeak 生態系第一個 Dogfooding 產品。")], icon="🎯"),
-    p(rt("發起人：Nelsen Chen（COO）｜文件：FR-BPF-2026-001 v0.6｜2026-07-03｜狀態："),
+    p(rt("發起人：Nelsen Chen（COO）｜文件：FR-BPF-2026-001 v0.7｜2026-07-03｜狀態："),
       rt("待拍板", bold=True, color="orange")),
     callout([rt("一頁式互動提案（對外可分享）：", bold=True), rt(SITE, link=SITE),
              rt("　｜　協作程式庫："), rt("FunRaise-Team/bizpeak-flow", link=REPO), rt("（public、含完整規格文件與 POC）")], icon="🔗", color="gray_background"),
@@ -108,9 +108,10 @@ b1 = [
         numbered(rt("切右上「財務」視角 → 收款頁「開立發票」「確認收款」；全部收清後才放行結案；結案後 C7 可「開新約」閉環")),
         numbered(rt("「日曆」頁籤：款項與合約到期散在月曆上、點任一項直開該合約")),
         numbered(rt("右下「助理」隨便說：「哪些款項逾期」「幫○○開一張 30 萬兩期的合約」「在景富那張留言：下週跟催」— 它替你操作、記錄標「你的名字（經助理）」、和本人動作分得開")),
+        numbered(rt("「報價」頁籤：報價這一步也收進來了 — 全公司報價單同一份（漏斗統計＋編輯連結）、「＋ 新 Co-Evo 報價」或跟助理說「幫○○報 Growth」直接產生報價單（Starter/Growth/Pro 內建、寫入公司報價庫、回編輯連結）— 業務不用再各自裝外掛")),
         numbered(rt("「產品」頁籤：公司產品目錄（官網＋報價實務彙整）— 介面可新增、Notion 可直接改、建約表單選產品自動帶建議價")),
         numbered(rt("開任一合約詳情 → 底部留言區：主管評論直接寫在合約上（同步 Notion、含留言人與時間）；資料庫之間已建真關聯 — 在 Notion 打開任一張合約、款項與事件都掛在同一條上")),
-        p(rt("提醒：這是概念驗證 — 合約資料為示意（可隨意操作）；客戶名單與報價單是公司真實資料（唯讀串接、匯入建約才會寫入合約庫）。每個動作都留痕在「事件」頁。", color="gray")),
+        p(rt("提醒：合約樣本為示意資料（全狀態鋪滿：草稿、簽核中、超時卡關、逾期 D+38、續約窗口、已結案、已作廢 — 可隨意操作）；客戶名單、同事名冊與報價單是公司真實資料。每個動作自動記錄在「紀錄」頁、各合約的操作歷史在詳情面板可展開。", color="gray")),
     ]),
     p(rt("敘事主軸：", bold=True), rt("從公司自身痛點出發、先在內部打通合約閉環、驗證後產品化 — 成為 BizPeak 生態系對外的第一個產品。")),
     divider(),
@@ -266,6 +267,6 @@ for b in verify:
     if t == "heading_1" and txt: h1s.append(txt)
 print(f"\n驗證：頁面共 {len(verify)} 頂層塊、H1：")
 for x in h1s: print("  -", x)
-ok = any("v0.6" in x for x in h1s) and not any(("v0.1" in x or "v0.2" in x or "v0.3" in x or "v0.4" in x or "v0.5" in x) for x in h1s)
-print(f"\nv0.6 存在且舊版已移除：{ok}｜合計 append {total} 塊")
+ok = any("v0.7" in x for x in h1s) and not any(("v0.1" in x or "v0.2" in x or "v0.3" in x or "v0.4" in x or "v0.5" in x or "v0.6" in x) for x in h1s)
+print(f"\nv0.7 存在且舊版已移除：{ok}｜合計 append {total} 塊")
 sys.exit(0 if ok else 2)

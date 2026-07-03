@@ -60,6 +60,12 @@ def payment_invoice(payment_id: str, invoice_no: str) -> dict:
 
 
 @mcp.tool()
+def quote_create(customer: str, plan: str = "Growth", owner: str = "", discount_untaxed: float = 0) -> dict:
+    """建立 Co-Evo 報價單（Starter/Growth/Pro、寫公司報價庫、回編輯連結）— 整合自報價外掛、免各自分支。"""
+    return cap.quote_create(customer, plan, owner, discount_untaxed or None, actor="MCP 使用者")
+
+
+@mcp.tool()
 def contract_renew(contract_id: str) -> dict:
     """續約開新約 — 原約需在 C7 續約窗口；新約沿用條件回 C0、閉環完成。"""
     return cap.contract_renew(contract_id, actor="MCP 使用者")

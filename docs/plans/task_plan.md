@@ -88,6 +88,12 @@
 - [x] migrate_v2：四條真關聯（款項/事件/評論→合約、合約→產品）＋既有 27 筆回填
 - [x] 驗證：身份分流實測（Nelsen Chen vs Philis Chen（經助理））、MCP 驗收修 C6 守門假設後 PASS、線上部署全綠、Notion 提案 v0.6
 
+### Phase 3.12: POC v5（2026-07-03 傍晚、訪談前收尾）
+- [x] 新權杖接手（含留言能力、poc/.env、與 NelsenClaw 整合並存 — 舊權杖仍有效、NelsenClaw 不受影響）
+- [x] 同事名單正源 = 艦員名冊（45 位在職）；線上留言同步 Notion 驗證 True
+- [x] SLA 卡關實裝（狀態進入日欄＋徽章＋超時紅標＋統計）、續約窗口提示、逾期自動標 P4、已結束收納
+- [x] 文件整理（README／SPEC 資料模型 v2／poc README）、全部推上 GitHub（204071a）
+
 ### Phase 4: 拍板後才動（不在本次範圍）
 - [ ] 使用者訪談（Ting / Glendy / Carol）→ 規格細化
 - [ ] 體驗 1.0 開發（Allen 主導搭建、Jaric 技術、拉兩位 RD）

@@ -88,6 +88,8 @@ def _bootstrap_data(force: bool = False) -> dict:
         "customers": _safe(lambda: [c["name"] for c in cap.customer_list()], []),
         "staff": _safe(cap.staff_list, []),
         "quotes_ready": _safe(cap.quote_ready_list, []),
+        "quotes_all": _safe(lambda: [{**q, "編輯連結": cap.QUOTE_EDIT + (q["page_id"] or "").replace("-", ""),
+                                      "notion_url": cap.notion_url(q["page_id"])} for q in cap.quote_rows()], []),
         "products": _safe(cap.product_list, []),
         "comments": _safe(cap.comment_list, []),
         "renewals": _safe(cap.renewal_alerts, []),
@@ -229,6 +231,21 @@ def product_create(req: ProductReq, request: Request):
     return r
 
 
+class QuoteCreateReq(BaseModel):
+    customer: str
+    plan: str = "Growth"
+    owner: str = ""
+    discount_untaxed: float | None = None
+
+
+@app.post("/api/quote_create")
+def quote_create_ep(req: QuoteCreateReq, request: Request):
+    r = cap.quote_create(req.customer, req.plan, req.owner, req.discount_untaxed, actor=_actor(request))
+    if r.get("ok"):
+        _invalidate()
+    return r
+
+
 class CommentReq(BaseModel):
     contract_id: str
     content: str
@@ -278,14 +295,16 @@ TOOL_DECLS = [
      "parameters": {"type": "object", "properties": {"contract_id": {"type": "string"}, "content": {"type": "string"}}, "required": ["contract_id", "content"]}},
     {"name": "comment_list", "description": "查某張合約的留言（contract_id 空字串查全部）",
      "parameters": {"type": "object", "properties": {"contract_id": {"type": "string"}}}},
+    {"name": "quote_create", "description": "建立 Co-Evo 報價單（寫入公司報價庫、回編輯連結）。plan = Starter / Growth / Pro；discount_untaxed 為議價未稅金額（會自動 ×1.05 換含稅）。人審動作、使用者明確要求才可呼叫",
+     "parameters": {"type": "object", "properties": {"customer": {"type": "string"}, "plan": {"type": "string"}, "owner": {"type": "string"}, "discount_untaxed": {"type": "number"}}, "required": ["customer"]}},
     {"name": "ui_navigate", "description": "切換使用者眼前的介面頁籤、可高亮某編號。回答涉及某頁籤資料時呼叫、讓使用者直接看到",
      "parameters": {"type": "object", "properties": {
-         "tab": {"type": "string", "enum": ["overview", "payments", "overdue", "calendar", "cashflow", "products", "events"]},
+         "tab": {"type": "string", "enum": ["overview", "payments", "overdue", "calendar", "cashflow", "quotes", "products", "events"]},
          "highlight": {"type": "string", "description": "要高亮的合約或款項編號（可選）"}}, "required": ["tab"]}},
 ]
 
 def sys_prompt(who: str = "使用者") -> str:
-    return f"""今天是 {datetime.now().strftime('%Y-%m-%d')}。目前操作者：{who} — 你替這個人執行、寫入記錄會標「{who}（經助理）」。你是 BizPeak Flow（FUNRAISE 合約生命週期系統）介面裡的操作助理、使用者正在看網頁介面（頁籤：overview 合約總覽 / payments 收款 / overdue 逾期 / cashflow 現金流 / events 事件）。
+    return f"""今天是 {datetime.now().strftime('%Y-%m-%d')}。目前操作者：{who} — 你替這個人執行、寫入記錄會標「{who}（經助理）」。你是 BizPeak Flow（FUNRAISE 合約生命週期系統）介面裡的操作助理、使用者正在看網頁介面（頁籤：overview 合約總覽 / payments 收款 / overdue 逾期 / calendar 日曆 / cashflow 現金流 / quotes 報價 / products 產品 / events 操作紀錄）。
 使用者說相對日期（八月十五、下個月初）一律解讀為未來最近的那個日期、年份以今天為準。
 規則：
 - 查詢與操作一律用工具、絕不編造資料
@@ -296,7 +315,8 @@ def sys_prompt(who: str = "使用者") -> str:
 - 轉移只能單向前進、退回必附理由
 - 使用者用客戶名稱指稱合約時、先用 contract_list 自行找到對應的合約編號再操作、不要反問使用者編號；只有同名多筆時才請使用者確認
 - 閉環規則：轉入 C4 會自動產生款項排程；C6 結案前款項必須全收（系統會擋）；C7 續約窗口用 contract_renew 開新約回 C0
-- 建約（contract_create）至少要客戶名與金額；期數與首期付款日沒講就用預設並在回覆說明"""
+- 建約（contract_create）至少要客戶名與金額；期數與首期付款日沒講就用預設並在回覆說明
+- Co-Evo 報價（quote_create）：Starter 首年 22,800 / Growth 41,800（主推）/ Pro 68,800（皆未稅）；建立後把編輯連結給使用者；報價單簽回後用 quote_import 建約"""
 
 CAP_FN = {
     "contract_list": cap.contract_list,
@@ -311,12 +331,13 @@ CAP_FN = {
     "customer_list": cap.customer_list,
     "quote_ready_list": cap.quote_ready_list,
     "quote_import": cap.quote_import,
+    "quote_create": cap.quote_create,
     "product_list": cap.product_list,
     "comment_add": cap.comment_add,
     "comment_list": cap.comment_list,
 }
 _SYS_WHO: dict = {}
-WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import", "comment_add"}
+WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import", "comment_add", "quote_create"}
 
 
 def _env_key(name: str) -> str:

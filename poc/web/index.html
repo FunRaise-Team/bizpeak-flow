@@ -176,10 +176,11 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
     <button class="on" data-t="overview">合約總覽</button>
     <button data-t="payments">收款</button>
     <button data-t="overdue">逾期</button>
+    <button data-t="quotes">報價</button>
     <button data-t="calendar">日曆</button>
     <button data-t="cashflow">現金流</button>
     <button data-t="products">產品</button>
-    <button data-t="events">事件</button>
+    <button data-t="events">紀錄</button>
   </div>
   <div class="grow"></div>
   <button class="newbtn" id="whoBtn" title="切換身份">◉ 未選身份</button>
@@ -213,7 +214,7 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
       <thead><tr><th>款項</th><th>合約</th><th>期數</th><th>發票號</th><th>預計付款日</th><th style="text-align:right">金額</th><th>狀態</th><th></th><th></th></tr></thead>
       <tbody></tbody>
     </table>
-    <p class="dnote">「開立發票」「確認收款」是人審動作 — 按下即寫回 Notion 並留痕。</p>
+    <p class="dnote">「開立發票」「確認收款」按下即寫回 Notion、並自動記錄操作歷史。</p>
   </div>
 
   <div class="pane" data-p="overdue">
@@ -223,6 +224,17 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
       <tbody></tbody>
     </table>
     <p class="dnote">催收梯級：D+3 提醒業務 → D+7 起草催收信 → D+30 升級主管 → D+60 強制升級決策。</p>
+  </div>
+
+  <div class="pane" data-p="quotes">
+    <div class="statbar" id="qstats"></div>
+    <div style="margin-bottom:12px"><button class="act pri" id="qNewBtn">＋ 新 Co-Evo 報價</button>
+      <span class="dnote" style="margin-left:10px">報價工具已內建 — 免裝外掛、免各自分支；聊天說「幫○○報 Growth」也行</span></div>
+    <table class="g" id="qtbl">
+      <thead><tr><th>報價單號</th><th>客戶</th><th>案型</th><th>狀態</th><th style="text-align:right">金額（未稅）</th><th>負責人</th><th></th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="dnote">報價單存在公司報價庫（與報價前端同一份）；「已簽約」的報價單可一鍵建約、自動進入合約生命週期。</p>
   </div>
 
   <div class="pane" data-p="calendar">
@@ -266,7 +278,7 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
       <thead><tr><th>時間</th><th>事件</th><th>合約</th><th>動作</th><th>執行者</th></tr></thead>
       <tbody></tbody>
     </table>
-    <p class="dnote">每個狀態變化都留痕（憲法第五條）。</p>
+    <p class="dnote">每個動作都會自動記錄、可追溯 — 誰、何時、做了什麼。</p>
   </div>
 </div>
 
@@ -296,6 +308,23 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
       <div id="qlist"></div>
     </div>
     <div class="pf"><span class="err" id="fErr"></span><button class="act" id="newCancel">取消</button><button class="act pri" id="newSubmit">建立合約</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="qOverlay">
+  <div class="panel">
+    <div class="ph">新 Co-Evo 報價單<span id="qClose">×</span></div>
+    <div class="pb">
+      <div><label>客戶名稱 *</label><input id="qCust" list="dlCust" placeholder="輸入或選擇客戶"></div>
+      <div><label>方案 *</label><select id="qPlan" style="width:100%;font-family:var(--sans);font-size:13.5px;border:1px solid var(--hair2);padding:8px 10px">
+        <option value="Starter">Starter — 首年 22,800（未稅）</option>
+        <option value="Growth" selected>Growth — 首年 41,800（未稅・主推）</option>
+        <option value="Pro">Pro — 首年 68,800（未稅）</option>
+      </select></div>
+      <div><label>報價負責人（預設＝目前身份）</label><input id="qOwner" list="dlStaff"></div>
+      <div><label>議價（未稅、可空 — 會自動換算含稅優惠價）</label><input id="qDisc" type="number" placeholder="60000"></div>
+    </div>
+    <div class="pf"><span class="err" id="qErr"></span><button class="act" id="qCancel">取消</button><button class="act pri" id="qSubmit">建立報價單</button></div>
   </div>
 </div>
 
@@ -347,7 +376,7 @@ function baseContracts(){
   if(teamFilter)list=list.filter(c=>c.負責業務===teamFilter);
   return list;
 }
-function renderAll(){renderOverview();renderPayments();renderOverdue();renderCalendar();renderCashflow();renderProducts();renderEvents();}
+function renderAll(){renderOverview();renderPayments();renderOverdue();renderQuotes();renderCalendar();renderCashflow();renderProducts();renderEvents();}
 
 function renderOverview(){
   const showDone=document.getElementById("showDone")?.checked;
@@ -363,7 +392,7 @@ function renderOverview(){
      <div class="stat"><b>未收合計</b><span>${fmt(S.cashflow.未收合計)}</span></div>
      <div class="stat"><b>其中逾期</b><span class="${S.cashflow.其中逾期>0?"bad":""}">${fmt(S.cashflow.其中逾期)}</span></div>
      <div class="stat"><b>逾期筆數</b><span class="${S.overdue.length>0?"bad":""}">${S.overdue.length}</span></div>
-     <div class="stat"><b>卡關（超 SLA）</b><span class="${stuck>0?"bad":""}">${stuck}</span></div>`;
+     <div class="stat"><b>卡關（超時）</b><span class="${stuck>0?"bad":""}">${stuck}</span></div>`;
   // 團隊載量
   const by={};
   S.contracts.forEach(c=>{
@@ -401,7 +430,7 @@ function slaBadge(c){
   if(c["SLA 剩餘"]==null){
     return (c.卡關天數!=null&&c.卡關天數>0&&!["C6","C7","X1","X2","C5"].includes(c.狀態))?` <span class="slab">${c.卡關天數} 天</span>`:"";
   }
-  return c["SLA 剩餘"]<0?` <span class="slab late">超時 ${-c["SLA 剩餘"]} 天</span>`:` <span class="slab">SLA 剩 ${c["SLA 剩餘"]} 天</span>`;
+  return c["SLA 剩餘"]<0?` <span class="slab late">超時 ${-c["SLA 剩餘"]} 天</span>`:` <span class="slab">時限剩 ${c["SLA 剩餘"]} 天</span>`;
 }
 function toggleTeam(nm){teamFilter=teamFilter===nm?null:nm;renderAll();}
 
@@ -452,7 +481,7 @@ function openDrawer(cid,scroll=true){
       <div><span>客戶</span>${c.客戶}</div><div><span>負責業務</span>${c.負責業務||"—"}</div>
       <div><span>金額</span><span class="mono">${fmt(c.金額)}</span></div><div><span>期數</span><span class="mono">${c.期數||"—"}</span></div>
       <div><span>生效日</span><span class="mono">${c.生效日||"—"}</span></div><div><span>到期日</span><span class="mono">${c.到期日||"—"}</span></div>
-      <div><span>此狀態已</span><span class="mono">${c.卡關天數!=null?c.卡關天數+" 天":"—"}</span></div><div><span>SLA</span><span class="mono">${c["SLA 剩餘"]!=null?(c["SLA 剩餘"]<0?"超時 "+(-c["SLA 剩餘"])+" 天":"剩 "+c["SLA 剩餘"]+" 天"):"—"}</span></div>
+      <div><span>此狀態已</span><span class="mono">${c.卡關天數!=null?c.卡關天數+" 天":"—"}</span></div><div><span>處理時限</span><span class="mono">${c["SLA 剩餘"]!=null?(c["SLA 剩餘"]<0?"超時 "+(-c["SLA 剩餘"])+" 天":"剩 "+c["SLA 剩餘"]+" 天"):"—"}</span></div>
     </div><div style="margin-top:10px"><a class="nlink" href="${nURL(c.page_id)}" target="_blank">↗ 在 Notion 開啟這張合約</a></div></div>
     <div class="dsec"><b class="lb">生命週期 — 目前 ${c.狀態} ${c.狀態名||""}</b>${track}</div>
     <div class="dsec"><b class="lb">動作</b><div class="actrow">${acts||'<span class="dnote">此視角無可用動作</span>'}</div></div>
@@ -462,7 +491,7 @@ function openDrawer(cid,scroll=true){
         <input id="cmIn" placeholder="留言給這張合約（會同步到 Notion 頁）" style="flex:1;font-family:var(--sans);font-size:12.5px;border:1px solid var(--hair2);padding:7px 10px;outline:none">
         <button class="act pri" onclick="sendComment('${cid}')">送出</button>
       </div></div>
-    <div class="dsec"><b class="lb">事件留痕（${evs.length}）</b>${evHtml}</div>`;
+    <div class="dsec"><details><summary style="font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink3);cursor:pointer;margin-bottom:7px">操作紀錄（${evs.length}）— 點開</summary>${evHtml}</details></div>`;
   document.getElementById("drawer").classList.add("on");
   document.getElementById("drawerMask").classList.add("on");
 }
@@ -581,7 +610,7 @@ async function doTransition(id,to){
   await loadData();highlight(id);
 }
 async function doPaid(id){
-  if(!confirm(`確認 ${id} 已收款？（寫回 Notion 並留痕）`))return;
+  if(!confirm(`確認 ${id} 已收款？`))return;
   const d=await api("/api/mark_paid",{payment_id:id});
   if(d.error)alert(d.error);else if(d.note)alert(d.note);
   await loadData();highlight(id);
@@ -695,6 +724,26 @@ document.getElementById("whoBtn").onclick=()=>{
 };
 
 /* 產品目錄 */
+function renderQuotes(){
+  const tb=document.querySelector("#qtbl tbody");if(!tb)return;tb.innerHTML="";
+  const qs=S.quotes_all||[];
+  const cnt={};qs.forEach(q=>{const st=q.狀態||"未標";cnt[st]=(cnt[st]||0)+1;});
+  const imported=new Set((S.contracts||[]).map(c=>c.來源報價單).filter(Boolean));
+  document.getElementById("qstats").innerHTML=Object.entries(cnt).map(([k,v])=>
+    `<div class="stat"><b>${k}</b><span>${v}</span></div>`).join("")+
+    `<div class="stat"><b>已建約</b><span>${qs.filter(q=>q.已匯入||imported.has(q.報價單號)).length}</span></div>`;
+  qs.forEach(q=>{
+    const ready=["已簽約","已核准","已用印"].includes(q.狀態||"");
+    const done=q.已匯入||imported.has(q.報價單號);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="mono">${q.報價單號||"—"}</td><td>${q.客戶名稱||"—"}</td>
+      <td>${q.案型||"—"}</td><td><span class="st ${ready?"ok":"wt"}">${q.狀態||"—"}</span></td>
+      <td class="amt">${fmt(q.優惠價||q.報價金額)}</td><td>${q.報價負責人||"—"}</td>
+      <td>${done?'<span class="dnote">已建約</span>':(ready?`<button class="act pri" onclick="doQuoteImport('${q.報價單號}')">建約</button>`:"")}</td>
+      <td><a class="nlink" href="${q.編輯連結}" target="_blank">✎ 編輯</a> <a class="nlink" href="${q.notion_url}" target="_blank">↗</a></td>`;
+    tb.appendChild(tr);
+  });
+}
 function renderProducts(){
   const tb=document.querySelector("#prtbl tbody");if(!tb)return;tb.innerHTML="";
   (S.products||[]).forEach(x=>{
@@ -728,6 +777,24 @@ async function sendComment(cid){
   await loadData();openDrawer(cid,false);
 }
 
+document.getElementById("qNewBtn").onclick=()=>{
+  document.getElementById("qErr").textContent="";
+  document.getElementById("qOwner").value=actor||"";
+  document.getElementById("qOverlay").classList.add("on");
+};
+document.getElementById("qClose").onclick=document.getElementById("qCancel").onclick=()=>document.getElementById("qOverlay").classList.remove("on");
+document.getElementById("qSubmit").onclick=async()=>{
+  const cust=document.getElementById("qCust").value.trim();
+  if(!cust){document.getElementById("qErr").textContent="客戶名稱必填";return;}
+  document.getElementById("qErr").textContent="建立中…";
+  const d=await api("/api/quote_create",{customer:cust,plan:document.getElementById("qPlan").value,
+    owner:document.getElementById("qOwner").value.trim(),
+    discount_untaxed:parseFloat(document.getElementById("qDisc").value)||null});
+  if(d.error){document.getElementById("qErr").textContent=d.error;return;}
+  document.getElementById("qOverlay").classList.remove("on");
+  await loadData();switchTab("quotes");
+  if(confirm(`報價單 ${d.報價單號} 已建立（${d.方案}、未稅 ${fmt(d.首年總計未稅)}）。\n要開啟編輯頁嗎？`))window.open(d.編輯連結,"_blank");
+};
 document.getElementById("showDone").onchange=()=>renderOverview();
 loadData().then(()=>ensureActor());
 </script>

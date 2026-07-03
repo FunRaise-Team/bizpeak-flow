@@ -515,3 +515,176 @@ def renewal_alerts(days: int = 60) -> list[dict]:
                         "剩餘天數": left, "狀態": c["狀態"]})
     out.sort(key=lambda x: x["剩餘天數"])
     return out
+
+
+# ── Co-Evo 報價產生（整合自 funraise-co-evo-quotation 外掛、業務免各自分支） ──
+
+COEVO_PLANS = {
+    "Starter": {"build": 3000, "annual": 19800, "pages": "300 頁", "chats": "100,000 次/月",
+                "history": "30 天", "crawl": "每三個月 1 次", "manual": "✕", "questions": "最多 4 題",
+                "report": "✕", "extra": []},
+    "Growth": {"build": 6000, "annual": 35800, "pages": "300 頁", "chats": "250,000 次/月",
+               "history": "90 天", "crawl": "每月 1 次", "manual": "2 次/月", "questions": "最多 6 題",
+               "report": "每季一次", "extra": ["行銷優惠券模組"]},
+    "Pro": {"build": 10000, "annual": 58800, "pages": "300 頁", "chats": "500,000 次/月",
+            "history": "180 天", "crawl": "每週 1 次（客戶指定）", "manual": "5 次/月", "questions": "最多 6 題",
+            "report": "每月一次", "extra": ["行銷優惠券模組", "對話資料匯出", "移除「Powered by 方睿」品牌客製"]},
+}
+QUOTE_DB_ID = "302b2192-4515-804b-8a56-ffaf847ebbdf"
+QUOTE_EDIT = "https://funraise-quote-bsc.vercel.app/edit?id="
+CRM_DS = "b4a6a57b-e0bf-42e7-92cc-f4978bf8fc8f"
+_COEVO_TERMS = """### 備註
+1. 報價效力與簽署
+- 本報價單視同正式合約，經客戶簽署回傳（或數位簽章）後即生效，雙方應受本報價單載明之權利義務規範。
+- 本報價單有效期限為開立日起 14 日內，逾期本公司保留調整價格與服務內容之權利。
+2. 付款條件
+- 本方案費用（建置費 + 首年年費，含客製項目）於合約簽訂後一次性支付 100%。
+- 本公司於合約簽訂後開立發票，客戶應於發票開立日起 30 日內完成付款（票期 30 天）；營業稅 5% 外加。
+3. 服務內容與額度說明
+- 服務範圍、月對話次數額度、爬蟲頁數與頻率、對話歷史保存天數等，以上方報價項目所載之方案內容為準。
+- 月對話次數額度於每月重置；當月額度用盡時，系統將暫停對話服務至次月重置（不會產生超額費用）。如有持續需求，可升級至更高方案，補繳兩方案年費差額後即取得新方案完整額度。
+- 建置服務包含官網接入、Starter Questions 設定與部署上線；建置完成後之大幅內容調整或新增功能，以人時或另案計價。
+4. 不含項目
+- 報價項目未列明之功能、頁面或模組；客戶官網改版、第三方服務費（簡訊、Email、金流、LINE 推播等）由客戶依平台帳單自行負擔。
+- 視覺素材與既有官網內容由客戶提供，不含於本報價。
+5. 雲端與 AI 運算資源
+- 提供本服務所需之 AI 模型呼叫、雲端主機與運算資源（Claude API、GCP、Vercel 等）費用，於方案額度範圍內均已包含於年費，客戶不另行負擔。
+6. 服務期間與續約
+- 本服務合約期間為一年，自帳號開通日起算；爬蟲更新、Lead 自動轉遞、24 小時服務與持續優化於服務期間內提供。
+- 合約期間內如進行方案升級，合約到期日將自升級日起重新計算 12 個月。
+- 合約期滿前 30 日，雙方重新評估次期合作需求並另行協議續約年費。
+7. 系統維運與持續優化
+- 年費已涵蓋全年度系統維運、版本更新與持續優化，並提供工作日線上技術支援服務。
+8. 報價機密性
+- 本報價單及其所載之價格、服務內容與商業條件均屬商業機密，未經本公司書面同意，客戶不得對外揭露或提供予任何第三方。
+9. 中途終止與退費
+- 合約簽訂並開通帳號後，除經雙方書面（含電子郵件）同意之特殊情況，客戶不得中途取消服務，已收款項不予退還。
+10. 使用規範與免責聲明
+- 本服務僅供客戶就其合法經營之業務進行對話導流與名單蒐集，嚴禁用於違法、詐欺、散布不實資訊或侵害第三人權利之用途。
+- 如客戶違反使用規範（包括但不限於惡意使用、危害系統安全、將帳號提供予未授權之第三方使用、上傳違法內容等），本公司有權逕行暫停或終止服務，且不負退費義務。
+- 本公司已取得提供本服務所需之一切合法授權。AI 對話內容係由模型自動生成，本公司已盡合理努力確保品質，惟不保證內容絕對無誤，客戶應自行審酌對外揭露之資訊。
+11. 資料權源與個人資料保護
+- 客戶保證所提供及合作過程涉及之資料（含官網內容、表單欄位設計）均具合法取得權源，無違反法令或侵害第三人權利之情事。
+- 雙方應依「個人資料保護法」及相關法規辦理個人資料之蒐集、處理與利用。透過本服務蒐集之對話紀錄與名單，本公司僅於提供服務之目的範圍內處理，不作其他用途。
+12. 遲延付款
+- 如客戶逾期未付款，應自逾期日起按年息百分之二計算遲延利息。逾期超過 60 日仍未付款者，本公司有權暫停服務至款項清償為止。
+13. 賠償責任上限
+- 本公司因本服務所生之損害賠償責任，以該年度已收取之服務費用總額為上限。前述限制不適用於因故意或重大過失所致之損害。
+14. 不可抗力
+- 因天災、火災、水災、戰爭、罷工、傳染病、暴動、政府法令變更、媒體平台或 AI 服務供應商政策調整或其他不可歸責於雙方之事由，致無法履行本報價單所定義務者，免負損害賠償責任。受影響之一方應立即通知他方，並敘明詳情。
+15. 智慧財產權
+- 本報價範圍為雲端 SaaS 平台服務，Co-Evo 平台之核心程式碼、AI 模型及演算法之智慧財產權歸方睿科技所有。客戶擁有平台使用權（於授權期間內）及透過本服務蒐集之對話紀錄與名單資料之完整所有權。
+16. 報價單變更與條款可分離性
+- 關於本報價單內容之任何更正或修改，皆須經雙方書面（含電子郵件）協議，否則不生效力。
+- 本報價單中任何條款如與相關法令牴觸而歸於無效者，僅該牴觸之部分無效，其餘條款仍具完全效力，不受影響。
+17. 準據法與管轄法院
+- 本報價單之解釋與適用，以中華民國法律為準據法。雙方因本報價單所生之爭議，應本於誠信原則協商解決；如未能於合理期間內達成共識而涉訟時，雙方同意以臺灣臺北地方法院為第一審管轄法院。"""
+
+
+def _crm_contact(customer: str) -> dict:
+    """CRM 查客戶窗口（容錯 — 查不到留空、不阻斷報價）。"""
+    try:
+        from notion_layer import api
+        res = api("POST", f"/data_sources/{CRM_DS}/query", {"page_size": 100})
+        for r in res["results"]:
+            props = r["properties"]
+            comp = ""
+            for k, v in props.items():
+                if "公司" in k and v.get("type") == "rich_text":
+                    comp = "".join(t.get("plain_text", "") for t in v["rich_text"])
+                    break
+            if comp and (customer in comp or comp in customer):
+                nm = next(("".join(t.get("plain_text", "") for t in v["title"])
+                           for v in props.values() if v["type"] == "title"), "")
+                return {"公司全名": comp, "窗口": nm}
+    except RuntimeError:
+        pass
+    return {}
+
+
+def _next_quote_no() -> str:
+    today = _date.today().isoformat()
+    prefix = f"FR-Q-{today}"
+    mx = 0
+    for q in quote_rows():
+        no = q.get("報價單號") or ""
+        if no.startswith(prefix) and no.endswith("SSIC"):
+            try:
+                mx = max(mx, int(no.split("-")[5]))
+            except (IndexError, ValueError):
+                pass
+    return f"{prefix}-{mx + 1:03d}-SSIC"
+
+
+def quote_create(customer: str, plan: str = "Growth", owner: str = "",
+                 discount_untaxed: float | None = None, actor: str = "使用者") -> dict:
+    """建立 Co-Evo 報價單（寫公司報價庫、與報價前端相容的 v4 格式）— 整合自報價外掛。"""
+    plan = plan.strip().capitalize()
+    if plan not in COEVO_PLANS:
+        return {"error": f"方案需為 Starter / Growth / Pro（收到「{plan}」）"}
+    if not customer.strip():
+        return {"error": "客戶名稱必填"}
+    from notion_layer import api
+    from datetime import timedelta as _td
+    p = COEVO_PLANS[plan]
+    total = p["build"] + p["annual"]
+    qno = _next_quote_no()
+    today = _date.today()
+    crm = _crm_contact(customer)
+    comp = crm.get("公司全名") or customer.strip()
+    owner = owner or actor.replace("（經助理）", "")
+
+    props = {
+        "名稱": {"title": [{"type": "text", "text": {"content": f"{customer.strip()}-Co-Evo {plan}"}}]},
+        "報價單號": {"rich_text": [{"type": "text", "text": {"content": qno}}]},
+        "報價日期": {"rich_text": [{"type": "text", "text": {"content": f"{today.year} 年 {today.month:02d} 月 {today.day:02d} 日"}}]},
+        "客戶名稱": {"rich_text": [{"type": "text", "text": {"content": comp}}]},
+        "案型": {"select": {"name": "Co-Evo"}},
+        "狀態": {"select": {"name": "草稿"}},
+        "報價金額": {"number": total},
+        "部門": {"select": {"name": "SSIC"}},
+        "有效期限": {"date": {"start": (today + _td(days=14)).isoformat()}},
+        "版本號": {"number": 0},
+        "報價負責人": {"rich_text": [{"type": "text", "text": {"content": owner}}]},
+    }
+    if discount_untaxed:
+        props["優惠價"] = {"number": round(discount_untaxed * 1.05)}
+    page = api("POST", "/pages", {"parent": {"type": "database_id", "database_id": QUOTE_DB_ID}, "properties": props})
+
+    extras_build = "\n".join(f"- {x}" for x in p["extra"] if "品牌" in x)
+    extras_annual = "\n".join(f"- {x}" for x in p["extra"] if "品牌" not in x)
+    fm_discount = f"\n專案優惠價: {round(discount_untaxed * 1.05)}" if discount_untaxed else ""
+    v4 = f"""---
+專案名稱: {customer.strip()} Co-Evo {plan} 導入專案
+報價單號: {qno}
+日期: {today.year} 年 {today.month:02d} 月 {today.day:02d} 日
+報價方: 方睿科技股份有限公司
+統編: 00225692
+地址: 台北市松山區民權東路三段170號
+專案負責人: {owner}
+客戶公司: {comp}
+客戶窗口: {crm.get('窗口', '')}{fm_discount}
+---
+## Co-Evo {plan} 建置費 | 1 | {p['build']}
+- 一次性官網接入與設定
+- 爬蟲頁數 {p['pages']}
+{extras_build}
+## Co-Evo {plan} 首年年費 | 1 | {p['annual']}
+- 月對話 {p['chats']}
+- 對話歷史保存 {p['history']}
+- 自動爬蟲 {p['crawl']}
+- 手動觸發 {p['manual']}
+- 對話分析報告 {p['report']}
+- Starter Questions {p['questions']}
+{extras_annual}
+{_COEVO_TERMS}"""
+    v4 = "\n".join(l for l in v4.splitlines() if l.strip() != "")
+    # 前端解析需要逐字保留 v4 標記 → 包 code block（多段 rich_text、各 ≤1900 字）
+    chunks = [v4[i:i + 1900] for i in range(0, len(v4), 1900)]
+    api("PATCH", f"/blocks/{page['id']}/children", {"children": [{
+        "type": "code", "code": {"language": "javascript",
+            "rich_text": [{"type": "text", "text": {"content": c}} for c in chunks]}}]})
+    _co_cache.pop("quotes", None)
+    log_event("", f"建立 Co-Evo 報價單 {qno}（{customer.strip()}、{plan}、未稅 {total:,}）", actor)
+    return {"ok": True, "報價單號": qno, "客戶": comp, "方案": plan,
+            "首年總計未稅": total, "編輯連結": QUOTE_EDIT + page["id"].replace("-", "")}
