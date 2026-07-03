@@ -15,5 +15,13 @@
   "cartridges": {
     "database_id": "2df92a68-0a67-4782-93be-a096367303f7",
     "data_source_id": "f812dcff-ef97-48f3-a84a-b89ddef44f13"
+  },
+  "products": {
+    "database_id": "2d0aa1df-060e-4c63-8d73-7ef42f14a4b6",
+    "data_source_id": "badf4825-13ec-4d15-b67c-0394c918db10"
+  },
+  "comments": {
+    "database_id": "590a5ccd-6226-4b54-b9c2-bd19eb7ae244",
+    "data_source_id": "a5c11f88-59ab-461b-bff1-f5a7b1bf35de"
   }
 }

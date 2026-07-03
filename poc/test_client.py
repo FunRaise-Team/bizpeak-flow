@@ -35,8 +35,14 @@ async def main():
                 r4 = await s.call_tool("contract_transition",
                                        {"contract_id": "CT-2026-047", "to_state": nxt[0], "actor": "驗收測試"})
                 t4 = r4.content[0].text
-                print(f"\n狀態轉移（{st}→{nxt[0]} 合法前進）:", t4[:160])
-                fwd_ok = '"ok": true' in t4
+                gd = json.loads(g.content[0].text)
+                unpaid = [x for x in gd.get("款項", []) if x["狀態"] != "P3"]
+                if nxt[0] == "C6" and unpaid:
+                    print(f"\n狀態轉移（{st}→C6、有未收款、應被守門擋）:", t4[:120])
+                    fwd_ok = "不能結案" in t4
+                else:
+                    print(f"\n狀態轉移（{st}→{nxt[0]} 合法前進）:", t4[:160])
+                    fwd_ok = '"ok": true' in t4
             else:
                 print(f"\nCT-2026-047 已在 {st}、無合法前進目標 — 跳過前進測試")
                 fwd_ok = True

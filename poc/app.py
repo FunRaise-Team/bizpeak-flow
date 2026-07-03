@@ -72,6 +72,8 @@ def _bootstrap_data(force: bool = False) -> dict:
         "customers": _safe(lambda: [c["name"] for c in cap.customer_list()], []),
         "staff": _safe(cap.staff_list, []),
         "quotes_ready": _safe(cap.quote_ready_list, []),
+        "products": _safe(cap.product_list, []),
+        "comments": _safe(cap.comment_list, []),
         "order": states.ORDER,
         "synced_at": datetime.now().strftime("%H:%M:%S"),
     }
@@ -88,6 +90,12 @@ def _safe(fn, fallback):
         return fn()
     except Exception:
         return fallback
+
+
+def _actor(request: Request) -> str:
+    from urllib.parse import unquote
+    a = unquote((request.headers.get("x-actor") or "").strip())
+    return a[:40] if a else "網頁使用者"
 
 
 @app.get("/")
@@ -112,8 +120,8 @@ class TransitionReq(BaseModel):
 
 
 @app.post("/api/transition")
-def transition(req: TransitionReq):
-    r = cap.contract_transition(req.contract_id, req.to_state, req.reason, actor="網頁使用者")
+def transition(req: TransitionReq, request: Request):
+    r = cap.contract_transition(req.contract_id, req.to_state, req.reason, actor=_actor(request))
     if r.get("ok"):
         _invalidate()
     return r
@@ -124,8 +132,8 @@ class PaidReq(BaseModel):
 
 
 @app.post("/api/mark_paid")
-def mark_paid(req: PaidReq):
-    r = cap.payment_mark_paid(req.payment_id, actor="網頁・財務")
+def mark_paid(req: PaidReq, request: Request):
+    r = cap.payment_mark_paid(req.payment_id, actor=_actor(request))
     if r.get("ok"):
         _invalidate()
     return r
@@ -141,9 +149,9 @@ class CreateReq(BaseModel):
 
 
 @app.post("/api/create")
-def create(req: CreateReq):
+def create(req: CreateReq, request: Request):
     r = cap.contract_create(req.customer, req.amount, req.terms, req.first_due,
-                            req.owner, req.expiry, actor="網頁使用者")
+                            req.owner, req.expiry, actor=_actor(request))
     if r.get("ok"):
         _invalidate()
     return r
@@ -155,8 +163,8 @@ class InvoiceReq(BaseModel):
 
 
 @app.post("/api/invoice")
-def invoice(req: InvoiceReq):
-    r = cap.payment_invoice(req.payment_id, req.invoice_no, actor="網頁・財務")
+def invoice(req: InvoiceReq, request: Request):
+    r = cap.payment_invoice(req.payment_id, req.invoice_no, actor=_actor(request))
     if r.get("ok"):
         _invalidate()
     return r
@@ -169,8 +177,8 @@ class QuoteImportReq(BaseModel):
 
 
 @app.post("/api/quote_import")
-def quote_import(req: QuoteImportReq):
-    r = cap.quote_import(req.quote_no, req.terms, req.first_due, actor="網頁使用者")
+def quote_import(req: QuoteImportReq, request: Request):
+    r = cap.quote_import(req.quote_no, req.terms, req.first_due, actor=_actor(request))
     if r.get("ok"):
         _invalidate()
     return r
@@ -181,8 +189,37 @@ class RenewReq(BaseModel):
 
 
 @app.post("/api/renew")
-def renew(req: RenewReq):
-    r = cap.contract_renew(req.contract_id, actor="網頁使用者")
+def renew(req: RenewReq, request: Request):
+    r = cap.contract_renew(req.contract_id, actor=_actor(request))
+    if r.get("ok"):
+        _invalidate()
+    return r
+
+
+class ProductReq(BaseModel):
+    name: str
+    ptype: str = "顧問服務"
+    pricing: str = "報價制"
+    price: float | None = None
+    note: str = ""
+
+
+@app.post("/api/product_create")
+def product_create(req: ProductReq, request: Request):
+    r = cap.product_create(req.name, req.ptype, req.pricing, req.price, req.note, actor=_actor(request))
+    if r.get("ok"):
+        _invalidate()
+    return r
+
+
+class CommentReq(BaseModel):
+    contract_id: str
+    content: str
+
+
+@app.post("/api/comment")
+def comment(req: CommentReq, request: Request):
+    r = cap.comment_add(req.contract_id, req.content, actor=_actor(request))
     if r.get("ok"):
         _invalidate()
     return r
@@ -218,14 +255,20 @@ TOOL_DECLS = [
      "parameters": {"type": "object", "properties": {}}},
     {"name": "quote_import", "description": "從已簽約報價單一鍵建約（帶入客戶、金額、負責人）。quote_no 例 FR-Q-2026-06-18-001-SSIC（人審動作）",
      "parameters": {"type": "object", "properties": {"quote_no": {"type": "string"}, "terms": {"type": "integer"}, "first_due": {"type": "string"}}, "required": ["quote_no"]}},
+    {"name": "product_list", "description": "產品目錄（顧問服務 / 標準產品 / 訂閱 / 客製、含建議單價）",
+     "parameters": {"type": "object", "properties": {}}},
+    {"name": "comment_add", "description": "在某張合約上留言（會同步到 Notion 合約頁、留言人=目前操作者）",
+     "parameters": {"type": "object", "properties": {"contract_id": {"type": "string"}, "content": {"type": "string"}}, "required": ["contract_id", "content"]}},
+    {"name": "comment_list", "description": "查某張合約的留言（contract_id 空字串查全部）",
+     "parameters": {"type": "object", "properties": {"contract_id": {"type": "string"}}}},
     {"name": "ui_navigate", "description": "切換使用者眼前的介面頁籤、可高亮某編號。回答涉及某頁籤資料時呼叫、讓使用者直接看到",
      "parameters": {"type": "object", "properties": {
-         "tab": {"type": "string", "enum": ["overview", "payments", "overdue", "cashflow", "events"]},
+         "tab": {"type": "string", "enum": ["overview", "payments", "overdue", "calendar", "cashflow", "products", "events"]},
          "highlight": {"type": "string", "description": "要高亮的合約或款項編號（可選）"}}, "required": ["tab"]}},
 ]
 
-def sys_prompt() -> str:
-    return f"""今天是 {datetime.now().strftime('%Y-%m-%d')}。你是 BizPeak Flow（FUNRAISE 合約生命週期系統）介面裡的操作助理、使用者正在看網頁介面（頁籤：overview 合約總覽 / payments 收款 / overdue 逾期 / cashflow 現金流 / events 事件）。
+def sys_prompt(who: str = "使用者") -> str:
+    return f"""今天是 {datetime.now().strftime('%Y-%m-%d')}。目前操作者：{who} — 你替這個人執行、寫入記錄會標「{who}（經助理）」。你是 BizPeak Flow（FUNRAISE 合約生命週期系統）介面裡的操作助理、使用者正在看網頁介面（頁籤：overview 合約總覽 / payments 收款 / overdue 逾期 / cashflow 現金流 / events 事件）。
 使用者說相對日期（八月十五、下個月初）一律解讀為未來最近的那個日期、年份以今天為準。
 規則：
 - 查詢與操作一律用工具、絕不編造資料
@@ -241,18 +284,22 @@ def sys_prompt() -> str:
 CAP_FN = {
     "contract_list": cap.contract_list,
     "contract_get": cap.contract_get,
-    "contract_transition": lambda **kw: cap.contract_transition(actor="聊天助理（人審後）", **kw),
+    "contract_transition": cap.contract_transition,
     "payment_overdue_list": cap.payment_overdue_list,
-    "payment_mark_paid": lambda **kw: cap.payment_mark_paid(actor="聊天助理（人審後）", **kw),
+    "payment_mark_paid": cap.payment_mark_paid,
     "cashflow_forecast": cap.cashflow_forecast,
-    "contract_create": lambda **kw: cap.contract_create(actor="聊天助理（人審後）", **kw),
-    "payment_invoice": lambda **kw: cap.payment_invoice(actor="聊天助理（人審後）", **kw),
-    "contract_renew": lambda **kw: cap.contract_renew(actor="聊天助理（人審後）", **kw),
+    "contract_create": cap.contract_create,
+    "payment_invoice": cap.payment_invoice,
+    "contract_renew": cap.contract_renew,
     "customer_list": cap.customer_list,
     "quote_ready_list": cap.quote_ready_list,
-    "quote_import": lambda **kw: cap.quote_import(actor="聊天助理（人審後）", **kw),
+    "quote_import": cap.quote_import,
+    "product_list": cap.product_list,
+    "comment_add": cap.comment_add,
+    "comment_list": cap.comment_list,
 }
-WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import"}
+_SYS_WHO: dict = {}
+WRITE_FNS = {"contract_transition", "payment_mark_paid", "contract_create", "payment_invoice", "contract_renew", "quote_import", "comment_add"}
 
 
 def _env_key(name: str) -> str:
@@ -286,7 +333,7 @@ def _nvidia(contents: list) -> dict:
             msgs.append({"role": "user" if c.get("role") == "user" else "assistant",
                          "content": "".join(x.get("text", "") for x in parts)})
     body = {"model": NVIDIA_MODEL,
-            "messages": [{"role": "system", "content": sys_prompt()}] + msgs,
+            "messages": [{"role": "system", "content": sys_prompt(_SYS_WHO.get("w", "使用者"))}] + msgs,
             "tools": [{"type": "function", "function": d} for d in TOOL_DECLS],
             "temperature": 0.2, "max_tokens": 1024}
     req = urllib.request.Request("https://integrate.api.nvidia.com/v1/chat/completions",
@@ -306,7 +353,7 @@ def _nvidia(contents: list) -> dict:
 
 def _gemini(contents: list) -> dict:
     body = {
-        "system_instruction": {"parts": [{"text": sys_prompt()}]},
+        "system_instruction": {"parts": [{"text": sys_prompt(_SYS_WHO.get("w", "使用者"))}]},
         "contents": contents,
         "tools": [{"function_declarations": TOOL_DECLS}],
         "generation_config": {"temperature": 0.2},
@@ -321,10 +368,14 @@ def _gemini(contents: list) -> dict:
 class ChatReq(BaseModel):
     message: str
     history: list = []  # [{role: "user"|"model", text: str}]
+    actor: str = ""
 
 
 @app.post("/api/chat")
-def chat(req: ChatReq):
+def chat(req: ChatReq, request: Request):
+    who = (req.actor or _actor(request)).strip()[:40] or "使用者"
+    via = f"{who}（經助理）"
+    _SYS_WHO["w"] = who
     contents = [{"role": h["role"], "parts": [{"text": h["text"]}]}
                 for h in req.history[-8:] if h.get("text")]
     contents.append({"role": "user", "parts": [{"text": req.message}]})
@@ -350,6 +401,8 @@ def chat(req: ChatReq):
                 result = {"ok": True}
             elif name in CAP_FN:
                 try:
+                    if name in WRITE_FNS:
+                        args = {**args, "actor": via}
                     result = CAP_FN[name](**args)
                 except Exception as e:
                     result = {"error": str(e)}

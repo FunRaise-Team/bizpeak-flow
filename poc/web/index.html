@@ -178,9 +178,11 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
     <button data-t="overdue">逾期</button>
     <button data-t="calendar">日曆</button>
     <button data-t="cashflow">現金流</button>
+    <button data-t="products">產品</button>
     <button data-t="events">事件</button>
   </div>
   <div class="grow"></div>
+  <button class="newbtn" id="whoBtn" title="切換身份">◉ 未選身份</button>
   <button class="newbtn" id="newBtn">＋ 新增合約</button>
   <select id="roleSel" title="角色視角">
     <option value="all">全部視角</option>
@@ -236,6 +238,25 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
     <p class="dnote">未收款按預計付款月彙總 — 回簽生效當下、款項排程自動產生、這張表即時更新。</p>
   </div>
 
+  <div class="pane" data-p="products">
+    <table class="g" id="prtbl">
+      <thead><tr><th>產品名稱</th><th>類型</th><th>定價模式</th><th style="text-align:right">建議單價</th><th>狀態</th><th>說明</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
+      <input id="prName" placeholder="新產品名稱" style="font-family:var(--sans);font-size:13px;border:1px solid var(--hair2);padding:7px 10px;min-width:200px">
+      <select id="prType" style="font-family:var(--sans);font-size:13px;border:1px solid var(--hair2);padding:7px 8px">
+        <option>顧問服務</option><option>標準產品</option><option>訂閱服務</option><option>客製專案</option><option>教育訓練</option>
+      </select>
+      <select id="prPricing" style="font-family:var(--sans);font-size:13px;border:1px solid var(--hair2);padding:7px 8px">
+        <option>報價制</option><option>固定價</option><option>訂閱制</option>
+      </select>
+      <input id="prPrice" type="number" placeholder="建議單價（可空）" style="font-family:var(--sans);font-size:13px;border:1px solid var(--hair2);padding:7px 10px;width:150px">
+      <button class="act pri" id="prAdd">加入目錄</button>
+    </div>
+    <p class="dnote">目錄兩邊皆可調：這裡新增即寫入 Notion 產品庫；直接在 Notion 改、介面一分鐘內反映。建約表單的產品下拉吃同一份。</p>
+  </div>
+
   <div class="pane" data-p="events">
     <table class="g" id="etbl">
       <thead><tr><th>時間</th><th>事件</th><th>合約</th><th>動作</th><th>執行者</th></tr></thead>
@@ -258,6 +279,7 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
     <div class="ph">新增合約（C0 報價草稿）<span id="newClose">×</span></div>
     <div class="pb">
       <div><label>客戶名稱 *（可從公司客戶大名單選）</label><input id="fCust" list="dlCust" placeholder="輸入或選擇客戶"><datalist id="dlCust"></datalist></div>
+      <div><label>產品／服務（選了會帶建議價）</label><select id="fProd" style="width:100%;font-family:var(--sans);font-size:13.5px;border:1px solid var(--hair2);padding:8px 10px"><option value="">— 不指定 —</option></select></div>
       <div><label>合約金額（未稅）*</label><input id="fAmt" type="number" placeholder="450000"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label>期數（1–12）</label><input id="fTerms" type="number" value="2" min="1" max="12"></div>
@@ -270,6 +292,17 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
       <div id="qlist"></div>
     </div>
     <div class="pf"><span class="err" id="fErr"></span><button class="act" id="newCancel">取消</button><button class="act pri" id="newSubmit">建立合約</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="whoOverlay">
+  <div class="panel">
+    <div class="ph">你是誰？（操作與留言都會以此身份留痕）</div>
+    <div class="pb">
+      <div><label>從同事名單選</label><select id="whoSel" style="width:100%;font-family:var(--sans);font-size:13.5px;border:1px solid var(--hair2);padding:8px 10px"></select></div>
+      <div><label>或自行輸入</label><input id="whoInput" placeholder="姓名"></div>
+    </div>
+    <div class="pf"><button class="act pri" id="whoOk">開始使用</button></div>
   </div>
 </div>
 
@@ -286,6 +319,7 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
 
 <script>
 let S=null,role="all",teamFilter=null,drawerId=null,calYm=null;
+let actor=localStorage.getItem("bpf_actor")||"";
 const hist=[];
 const fmt=n=>n==null?"—":Number(n).toLocaleString("zh-Hant-TW");
 const fmtK=n=>n>=10000?(Math.round(n/1000)/10)+"萬":fmt(n);
@@ -309,7 +343,7 @@ function baseContracts(){
   if(teamFilter)list=list.filter(c=>c.負責業務===teamFilter);
   return list;
 }
-function renderAll(){renderOverview();renderPayments();renderOverdue();renderCalendar();renderCashflow();renderEvents();}
+function renderAll(){renderOverview();renderPayments();renderOverdue();renderCalendar();renderCashflow();renderProducts();renderEvents();}
 
 function renderOverview(){
   const list=baseContracts();
@@ -363,6 +397,8 @@ function openDrawer(cid,scroll=true){
   document.getElementById("drSub").textContent=c.客戶;
   const pays=S.payments.filter(p=>p.合約編號===cid);
   const evs=S.events.filter(e=>e.合約編號===cid);
+  const cms=(S.comments||[]).filter(x=>x.合約編號===cid);
+  const cmHtml=cms.length?cms.map(x=>`<div class="evline"><span class="mono">${(x.時間||"").slice(0,16).replace("T"," ")} · ${x.留言人||""}</span><br>${x.內容||""}</div>`).join(""):'<div class="dnote">尚無留言</div>';
   let track='<div class="track">';
   S.order.forEach((st,i)=>{
     const idx=S.order.indexOf(c.狀態);
@@ -403,6 +439,11 @@ function openDrawer(cid,scroll=true){
     <div class="dsec"><b class="lb">生命週期 — 目前 ${c.狀態} ${c.狀態名||""}</b>${track}</div>
     <div class="dsec"><b class="lb">動作</b><div class="actrow">${acts||'<span class="dnote">此視角無可用動作</span>'}</div></div>
     <div class="dsec"><b class="lb">款項（${pays.length}）</b>${payHtml}</div>
+    <div class="dsec"><b class="lb">留言（${cms.length}）</b>${cmHtml}
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="cmIn" placeholder="留言給這張合約（會同步到 Notion 頁）" style="flex:1;font-family:var(--sans);font-size:12.5px;border:1px solid var(--hair2);padding:7px 10px;outline:none">
+        <button class="act pri" onclick="sendComment('${cid}')">送出</button>
+      </div></div>
     <div class="dsec"><b class="lb">事件留痕（${evs.length}）</b>${evHtml}</div>`;
   document.getElementById("drawer").classList.add("on");
   document.getElementById("drawerMask").classList.add("on");
@@ -510,7 +551,7 @@ function renderEvents(){
 }
 
 async function api(path,body){
-  const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Actor":encodeURIComponent(actor||"")},body:JSON.stringify(body)});
   return r.json();
 }
 async function doTransition(id,to){
@@ -552,6 +593,11 @@ async function doQuoteImport(qno){
 const ov=document.getElementById("newOverlay");
 document.getElementById("newBtn").onclick=()=>{
   ov.classList.add("on");document.getElementById("fErr").textContent="";
+  const fp=document.getElementById("fProd");
+  fp.innerHTML='<option value="">— 不指定 —</option>'+(S.products||[]).filter(x=>x.狀態!=="停售").map(x=>
+    `<option value="${x.產品名稱}" data-price="${x.建議單價||""}">${x.產品名稱}（${x.類型}）</option>`).join("");
+  fp.onchange=()=>{const o=fp.selectedOptions[0];const pr=o?.dataset?.price;
+    if(pr&&!document.getElementById("fAmt").value)document.getElementById("fAmt").value=pr;};
   const ql=document.getElementById("qlist");
   const qs=(S.quotes_ready||[]);
   ql.innerHTML=qs.length?qs.map(q=>
@@ -599,7 +645,7 @@ async function sendChat(){
   inp.value="";bubble("u",t);hist.push({role:"user",text:t});
   const th=bubble("a think","助理處理中…");
   try{
-    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:t,history:hist.slice(0,-1)})});
+    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:t,history:hist.slice(0,-1),actor:actor})});
     const d=await r.json();
     th.remove();bubble("a",d.reply);hist.push({role:"model",text:d.reply});
     if(d.refresh)await loadData();
@@ -609,7 +655,62 @@ async function sendChat(){
 document.getElementById("chatSend").onclick=sendChat;
 document.getElementById("chatIn").addEventListener("keydown",e=>{if(e.key==="Enter")sendChat();});
 
-loadData();
+/* 身份 */
+function whoLabel(){document.getElementById("whoBtn").textContent="◉ "+(actor||"未選身份");}
+function ensureActor(){
+  if(actor){whoLabel();return;}
+  const sel=document.getElementById("whoSel");
+  sel.innerHTML='<option value="">— 選擇 —</option>'+(S.staff||[]).map(n=>`<option>${n}</option>`).join("");
+  document.getElementById("whoOverlay").classList.add("on");
+}
+document.getElementById("whoOk").onclick=()=>{
+  const v=(document.getElementById("whoInput").value.trim()||document.getElementById("whoSel").value).trim();
+  if(!v)return;
+  actor=v;localStorage.setItem("bpf_actor",v);whoLabel();
+  document.getElementById("whoOverlay").classList.remove("on");
+};
+document.getElementById("whoBtn").onclick=()=>{
+  const sel=document.getElementById("whoSel");
+  sel.innerHTML='<option value="">— 選擇 —</option>'+(S?.staff||[]).map(n=>`<option>${n}</option>`).join("");
+  document.getElementById("whoInput").value=actor;
+  document.getElementById("whoOverlay").classList.add("on");
+};
+
+/* 產品目錄 */
+function renderProducts(){
+  const tb=document.querySelector("#prtbl tbody");if(!tb)return;tb.innerHTML="";
+  (S.products||[]).forEach(x=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><b>${x.產品名稱}</b></td><td>${x.類型||"—"}</td><td>${x.定價模式||"—"}</td>
+      <td class="amt">${x.建議單價?fmt(x.建議單價):"—"}</td>
+      <td><span class="st ${x.狀態==="上架"?"ok":"wt"}">${x.狀態}</span></td>
+      <td style="color:var(--ink2);font-size:12px">${x.說明||""}</td>
+      <td><a class="nlink" href="${nURL(x.page_id)}" target="_blank">↗</a></td>`;
+    tb.appendChild(tr);
+  });
+}
+document.getElementById("prAdd").onclick=async()=>{
+  const name=document.getElementById("prName").value.trim();
+  if(!name){alert("產品名稱必填");return;}
+  const d=await api("/api/product_create",{name:name,
+    ptype:document.getElementById("prType").value,
+    pricing:document.getElementById("prPricing").value,
+    price:parseFloat(document.getElementById("prPrice").value)||null});
+  if(d.error){alert(d.error);return;}
+  document.getElementById("prName").value="";document.getElementById("prPrice").value="";
+  await loadData();
+};
+
+/* 留言 */
+async function sendComment(cid){
+  const inp=document.getElementById("cmIn");const t=inp.value.trim();
+  if(!t)return;
+  const d=await api("/api/comment",{contract_id:cid,content:t});
+  if(d.error){alert(d.error);return;}
+  await loadData();openDrawer(cid,false);
+}
+
+loadData().then(()=>ensureActor());
 </script>
 </body>
 </html>

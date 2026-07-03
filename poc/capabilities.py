@@ -384,3 +384,81 @@ def quote_import(quote_no: str, terms: int = 1, first_due: str = "", actor: str 
     log_event(r["合約編號"], f"報價單匯入 {quote_no} → 建約（{q['客戶名稱']}、{amount:,.0f}、負責人 {q['報價負責人']}）", actor)
     return {"ok": True, "合約編號": r["合約編號"], "報價單號": quote_no,
             "客戶": q["客戶名稱"], "金額": amount}
+
+
+# ── 產品目錄 / 評論 / 身份鏈（v3） ──
+
+def _products(): return load_ids()["products"]
+def _comments(): return load_ids()["comments"]
+
+
+def product_list() -> list[dict]:
+    """產品目錄（資料庫與介面兩邊都能調 — 這裡讀、介面與 Notion 都可寫）。"""
+    def fetch():
+        out = []
+        for r in query_db(_products()):
+            out.append({
+                "page_id": r["id"],
+                "產品名稱": read_prop(r, "產品名稱"),
+                "類型": read_prop(r, "類型"),
+                "定價模式": read_prop(r, "定價模式"),
+                "建議單價": read_prop(r, "建議單價"),
+                "狀態": read_prop(r, "狀態") or "上架",
+                "說明": read_prop(r, "說明"),
+            })
+        out.sort(key=lambda x: (x["類型"] or "", x["產品名稱"] or ""))
+        return out
+    return _cached("products", 60, fetch)
+
+
+def product_create(name: str, ptype: str = "顧問服務", pricing: str = "報價制",
+                   price: float | None = None, note: str = "", actor: str = "使用者") -> dict:
+    if not name.strip():
+        return {"error": "產品名稱必填"}
+    props = {"產品名稱": title(name.strip()), "類型": select(ptype),
+             "定價模式": select(pricing), "狀態": select("上架"), "說明": text(note)}
+    if price:
+        props["建議單價"] = number(price)
+    create_row(_products(), props)
+    _co_cache.pop("products", None)
+    log_event("", f"產品目錄新增：{name.strip()}（{ptype}・{pricing}）", actor)
+    return {"ok": True, "產品名稱": name.strip()}
+
+
+def comment_add(contract_id: str, content: str, actor: str = "使用者") -> dict:
+    """合約留言 — 寫評論庫（含關聯）＋ 同步為該合約 Notion 頁的原生留言 ＋ 事件留痕。"""
+    if not content.strip():
+        return {"error": "留言內容必填"}
+    cs = [c for c in contract_rows() if c["合約編號"] == contract_id]
+    if not cs:
+        return {"error": f"找不到合約 {contract_id}"}
+    c = cs[0]
+    from datetime import datetime as _dt
+    create_row(_comments(), {
+        "留言": title(content.strip()[:80]),
+        "合約編號": text(contract_id), "留言人": text(actor),
+        "時間": {"date": {"start": _dt.now().isoformat()}},
+        "合約": {"relation": [{"id": c["page_id"]}]},
+    })
+    notion_comment = False
+    try:
+        from notion_layer import api as _api
+        _api("POST", "/comments", {"parent": {"page_id": c["page_id"]},
+             "rich_text": [{"type": "text", "text": {"content": f"{actor}：{content.strip()}"}}]})
+        notion_comment = True
+    except RuntimeError:
+        pass  # 整合未開留言能力 — 評論庫仍有完整記錄
+    log_event(contract_id, f"留言：{content.strip()[:60]}", actor)
+    return {"ok": True, "合約編號": contract_id, "notion_comment": notion_comment}
+
+
+def comment_list(contract_id: str = "") -> list[dict]:
+    out = []
+    for r in query_db(_comments()):
+        cid = read_prop(r, "合約編號")
+        if contract_id and cid != contract_id:
+            continue
+        out.append({"合約編號": cid, "留言人": read_prop(r, "留言人"),
+                    "內容": read_prop(r, "留言"), "時間": read_prop(r, "時間")})
+    out.sort(key=lambda x: x["時間"] or "", reverse=True)
+    return out
