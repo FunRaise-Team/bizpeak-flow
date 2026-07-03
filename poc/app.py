@@ -419,12 +419,35 @@ def _gemini(contents: list) -> dict:
         "contents": contents,
         "tools": [{"function_declarations": TOOL_DECLS}],
         "generation_config": {"temperature": 0.2},
+        "safetySettings": [{"category": c, "threshold": "BLOCK_NONE"} for c in (
+            "HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH",
+            "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT")],
     }
     req = urllib.request.Request(
         f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={_gemini_key()}",
         data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
+
+
+def _fmt_fallback(results: list) -> str:
+    """模型最終輪空回覆時（如安全過濾）、直接把工具結果格式化給使用者。"""
+    if not results:
+        return "（沒有回覆 — 請換個說法再問一次）"
+    out = []
+    for name, r in results[-3:]:
+        if isinstance(r, list):
+            for item in r[:8]:
+                if isinstance(item, dict):
+                    title = item.get("樣板名稱") or item.get("產品名稱") or item.get("合約編號") or item.get("報價單號") or ""
+                    body = item.get("內容") or item.get("說明") or ""
+                    meta = "、".join(str(item[k]) for k in ("類型", "狀態") if item.get(k))
+                    out.append(f"【{title}】（{meta}）\n{body}" if body else f"・{title}（{meta}）")
+                else:
+                    out.append(str(item))
+        elif isinstance(r, dict):
+            out.append("\n".join(f"{k}：{v}" for k, v in r.items() if k != "page_id" and not isinstance(v, (dict, list)))[:1500])
+    return ("以下是查到的內容（原文照列）：\n\n" + "\n\n".join(out))[:3500]
 
 
 class ChatReq(BaseModel):
@@ -442,6 +465,7 @@ def chat(req: ChatReq, request: Request):
                 for h in req.history[-8:] if h.get("text")]
     contents.append({"role": "user", "parts": [{"text": req.message}]})
     actions, refresh = [], False
+    last_results = []
 
     for _ in range(6):
         try:
@@ -451,7 +475,7 @@ def chat(req: ChatReq, request: Request):
         parts = (res.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
         calls = [p["functionCall"] for p in parts if "functionCall" in p]
         if not calls:
-            reply = "".join(p.get("text", "") for p in parts) or "（沒有回覆）"
+            reply = "".join(p.get("text", "") for p in parts) or _fmt_fallback(last_results)
             return {"reply": reply, "actions": actions, "refresh": refresh}
 
         contents.append({"role": "model", "parts": parts})
@@ -479,6 +503,7 @@ def chat(req: ChatReq, request: Request):
             if not isinstance(result, dict):
                 result = {"result": result}
             fr_parts.append({"functionResponse": {"name": name, "response": result}})
+            last_results.append((name, result))
         contents.append({"role": "user", "parts": fr_parts})
 
     return {"reply": "這個要求太複雜、我卡住了 — 換個說法試試？", "actions": actions, "refresh": refresh}
