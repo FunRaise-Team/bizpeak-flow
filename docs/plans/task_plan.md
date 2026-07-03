@@ -59,6 +59,13 @@
 - [x] POC：poc/（狀態機＋Notion 層＋四庫建置＋MCP 六工具）、驗收 PASS、已掛 Claude Code（✓ Connected）
 - [x] Notion v0.4（14 章節、59 塊）＋ Vercel 部署外部驗證 v0.4
 
+### Phase 3.8: POC 升級 1.0＋1.5（2026-07-03 上午、Nelsen 指示「分享時要有雛形」）
+- [x] capabilities.py 能力層抽出 — 網頁 / 聊天 / MCP 三入口共用（能力先於介面的實作證明）
+- [x] app.py 網頁應用（四頁籤真資料、推進與收款按鈕實寫 Notion）＋ /api/chat（Gemini 函式呼叫）
+- [x] web/index.html 前端（原生零建構鏈）；launch.json 加 bizpeak-poc-app（:8790）
+- [x] 實測：聊天寫入全鏈（自然語言→查編號→C2→C3→Notion 實寫→留痕→前端切頁高亮）、非法轉移被擋、MCP 驗收 PASS、介面零錯誤＋截圖
+- [x] 排障：POC Notion 頁被移入垃圾桶（父頁 in_trash）→ API 還原、查詢恢復
+
 ### Phase 4: 拍板後才動（不在本次範圍）
 - [ ] 使用者訪談（Ting / Glendy / Carol）→ 規格細化
 - [ ] 體驗 1.0 開發（Allen 主導搭建、Jaric 技術、拉兩位 RD）

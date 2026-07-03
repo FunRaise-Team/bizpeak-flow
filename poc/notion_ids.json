@@ -1,19 +1,19 @@
 {
-  "poc_page": "391b2192-4515-8137-a95c-c1d0f74f97e6",
+  "poc_page": "392b2192-4515-81e5-b756-f414b4ac1980",
   "contracts": {
-    "database_id": "d916afa4-6d03-4783-beed-059d305f8eb4",
-    "data_source_id": "f91e2e44-139c-4324-8852-455fd8178d63"
+    "database_id": "ffb192eb-6048-4563-b84f-018979fab7e2",
+    "data_source_id": "88ed95b8-6125-4369-a882-4518968d3d89"
   },
   "payments": {
-    "database_id": "12492c8b-2297-4829-8b13-c51f8a235956",
-    "data_source_id": "b8fb4880-7262-4834-9bd4-7ce81c122e31"
+    "database_id": "9d2389e4-d4fe-48f9-975c-6633131cb993",
+    "data_source_id": "f6c72c45-59a9-4a8d-a85f-5221fd501719"
   },
   "events": {
-    "database_id": "7a9b751e-911f-4eaf-aa75-125248c88453",
-    "data_source_id": "fb8da80d-49b9-4725-8768-8edbf7e2d90d"
+    "database_id": "4d0b0864-8042-4f77-90b7-95a583e280aa",
+    "data_source_id": "56260571-782a-46c6-9713-24fc1f88561e"
   },
   "cartridges": {
-    "database_id": "6ecf43c6-50d2-435e-aa2a-5e114f332d8e",
-    "data_source_id": "d9fc8ba9-3b01-4dc8-a827-17e3265a9f2b"
+    "database_id": "2df92a68-0a67-4782-93be-a096367303f7",
+    "data_source_id": "f812dcff-ef97-48f3-a84a-b89ddef44f13"
   }
 }

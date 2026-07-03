@@ -46,5 +46,24 @@ def cashflow_forecast() -> dict:
     return cap.cashflow_forecast()
 
 
+@mcp.tool()
+def contract_create(customer: str, amount: float, terms: int = 1, first_due: str = "",
+                    owner: str = "", expiry: str = "") -> dict:
+    """建立合約（C0 報價草稿）— 閉環起點。terms 期數（1-12）、first_due 首期付款日（YYYY-MM-DD）。"""
+    return cap.contract_create(customer, amount, terms, first_due, owner, expiry, actor="MCP 使用者")
+
+
+@mcp.tool()
+def payment_invoice(payment_id: str, invoice_no: str) -> dict:
+    """開立發票（P0 → P1）— 人審動作、發票號必填。"""
+    return cap.payment_invoice(payment_id, invoice_no, actor="MCP・財務")
+
+
+@mcp.tool()
+def contract_renew(contract_id: str) -> dict:
+    """續約開新約 — 原約需在 C7 續約窗口；新約沿用條件回 C0、閉環完成。"""
+    return cap.contract_renew(contract_id, actor="MCP 使用者")
+
+
 if __name__ == "__main__":
     mcp.run()
