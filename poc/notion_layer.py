@@ -17,12 +17,12 @@ IDS_FILE = Path(__file__).parent / "notion_ids.json"
 def _token() -> str:
     if os.environ.get("NOTION_API_KEY"):
         return os.environ["NOTION_API_KEY"].strip()
-    env = Path.home() / "NelsenClaw" / ".env"
-    if env.exists():
-        for line in env.read_text().splitlines():
-            if line.startswith("NOTION_API_KEY="):
-                return line.split("=", 1)[1].strip()
-    raise RuntimeError("找不到 NOTION_API_KEY（環境變數或 ~/NelsenClaw/.env）")
+    for env in (Path(__file__).parent / ".env", Path.home() / "NelsenClaw" / ".env"):
+        if env.exists():
+            for line in env.read_text().splitlines():
+                if line.startswith("NOTION_API_KEY="):
+                    return line.split("=", 1)[1].strip()
+    raise RuntimeError("找不到 NOTION_API_KEY（環境變數、poc/.env 或 ~/NelsenClaw/.env）")
 
 
 def api(method: str, path: str, body: dict | None = None) -> dict:

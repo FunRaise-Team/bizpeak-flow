@@ -40,6 +40,7 @@ def contract_rows(status: str | None = None) -> list[dict]:
             "首期日": read_prop(r, "首期日"),
             "生效日": read_prop(r, "生效日"),
             "到期日": read_prop(r, "到期日"),
+            "狀態進入日": read_prop(r, "狀態進入日"),
         })
     out.sort(key=lambda c: c["合約編號"] or "")
     return out
@@ -126,6 +127,7 @@ def contract_create(customer: str, amount: float, terms: int = 1, first_due: str
         "合約編號": title(cid), "客戶": text(customer), "狀態": select("C0"),
         "負責業務": text(owner or actor), "金額": number(amount), "期數": number(terms),
         "首期日": date(first_due or None), "到期日": date(expiry or None),
+        "狀態進入日": date(_date.today().isoformat()),
     })
     log_event(cid, f"建立合約（C0 報價草稿）：{customer}、{amount:,.0f}、{terms} 期", actor)
     return {"ok": True, "合約編號": cid, "狀態": "C0", "客戶": customer}
@@ -172,7 +174,7 @@ def contract_transition(contract_id: str, to_state: str, reason: str = "",
         unpaid = [p["款項編號"] for p in pays if p["狀態"] != "P3"]
         if unpaid:
             return {"error": f"不能結案：還有 {len(unpaid)} 筆款項未收（{'、'.join(unpaid)}）— 全部收款確認後才可轉 C6"}
-    update_row(c["page_id"], {"狀態": select(to_state)})
+    update_row(c["page_id"], {"狀態": select(to_state), "狀態進入日": date(_date.today().isoformat())})
     kind = "退回" if v["kind"] == "rollback" else "前進"
     log_event(contract_id, f"狀態{kind}：{c['狀態']} → {to_state}" + (f"（理由：{reason}）" if reason else ""), actor)
     out = {"ok": True, "合約編號": contract_id, "from": c["狀態"], "to": to_state,
@@ -262,6 +264,7 @@ def cashflow_forecast() -> dict:
 COMPANY_DS = {
     "customers": "2a9b2192-4515-8189-a6c1-000b3d43763f",   # 生態系合作廠商大名單
     "quotes": "302b2192-4515-8077-8d4c-000b65889864",       # 報價 DB（funraise-sales-skills）
+    "crew": "3455dbc4-a4ce-4144-bcf5-542d524def1d",         # 艦員名冊（同事正源）
 }
 _co_cache: dict = {}
 
@@ -309,8 +312,26 @@ def customer_list() -> list[dict]:
 
 
 def staff_list() -> list[str]:
-    """負責人清單 — 客戶大名單 Account Owner ∪ 報價單負責人（同事帳號庫未分享給整合、以此替代）。"""
+    """同事名單 — 正源：艦員名冊（在職）；讀不到時退回 Account Owner ∪ 報價負責人。"""
     def fetch():
+        try:
+            from notion_layer import api
+            names = []
+            res = api("POST", f"/data_sources/{COMPANY_DS['crew']}/query", {"page_size": 100})
+            for r in res["results"]:
+                nm = read_prop(r, "姓名") or ""
+                status = read_prop(r, "狀態") or ""
+                code = next(("".join(t.get("plain_text", "") for t in v["title"])
+                             for v in r["properties"].values() if v["type"] == "title"), "")
+                if not nm or "TEST" in code.upper() or code == "F9999":
+                    continue
+                if status and any(k in status for k in ("離職", "停用", "停職")):
+                    continue
+                names.append(nm)
+            if names:
+                return sorted(set(names))
+        except RuntimeError:
+            pass
         names = {c["owner"] for c in customer_list() if c["owner"]}
         for q in quote_rows():
             if q["報價負責人"]:
@@ -461,4 +482,36 @@ def comment_list(contract_id: str = "") -> list[dict]:
         out.append({"合約編號": cid, "留言人": read_prop(r, "留言人"),
                     "內容": read_prop(r, "留言"), "時間": read_prop(r, "時間")})
     out.sort(key=lambda x: x["時間"] or "", reverse=True)
+    return out
+
+
+def overdue_lazy_flag(actor: str = "催收規則引擎") -> int:
+    """過期未收（P0/P1/P2 且過預計付款日）→ 標記 P4 並留痕。回傳更新筆數。"""
+    t = _date.today().isoformat()
+    n = 0
+    for p in payment_rows():
+        if p["狀態"] in ("P0", "P1", "P2") and p["預計付款日"] and p["預計付款日"] < t:
+            update_row(p["page_id"], {"狀態": select("P4")})
+            log_event(p["合約編號"] or "", f"款項 {p['款項編號']} 逾期（預計 {p['預計付款日']}）→ 標記 P4、進催收梯級", actor)
+            n += 1
+    return n
+
+
+def renewal_alerts(days: int = 60) -> list[dict]:
+    """續約窗口偵測 — 到期日在 N 天內、且尚未進續約流程（C5/C6）。讀取時動態計算、免排程器。"""
+    from datetime import timedelta as _td
+    t = _date.today()
+    out = []
+    for c in contract_rows():
+        if c["狀態"] not in ("C5", "C6") or not c["到期日"]:
+            continue
+        try:
+            exp = _date.fromisoformat(c["到期日"])
+        except ValueError:
+            continue
+        left = (exp - t).days
+        if left <= days:
+            out.append({"合約編號": c["合約編號"], "客戶": c["客戶"], "到期日": c["到期日"],
+                        "剩餘天數": left, "狀態": c["狀態"]})
+    out.sort(key=lambda x: x["剩餘天數"])
     return out

@@ -195,8 +195,12 @@ button.act.ghosty{border-color:var(--hair2);color:var(--ink2);}
 
 <div class="wrap">
   <div class="pane on" data-p="overview">
+    <div id="renewBar"></div>
     <div class="statbar" id="stats"></div>
     <div class="team" id="teamBar"></div>
+    <label style="font-size:12px;color:var(--ink2);display:inline-flex;gap:6px;align-items:center;margin-bottom:8px;cursor:pointer">
+      <input type="checkbox" id="showDone">顯示已結束（結案／作廢／歸檔）
+    </label>
     <table class="g" id="ctbl">
       <thead><tr><th>合約</th><th>客戶</th><th>狀態</th><th>負責業務</th><th>期數</th><th>到期日</th><th style="text-align:right">金額</th><th></th><th></th></tr></thead>
       <tbody></tbody>
@@ -346,13 +350,20 @@ function baseContracts(){
 function renderAll(){renderOverview();renderPayments();renderOverdue();renderCalendar();renderCashflow();renderProducts();renderEvents();}
 
 function renderOverview(){
-  const list=baseContracts();
+  const showDone=document.getElementById("showDone")?.checked;
+  let list=baseContracts();
+  if(!showDone)list=list.filter(c=>!["C6","X1","X2"].includes(c.狀態));
   const act=list.filter(c=>!["C6","X1","X2"].includes(c.狀態));
+  const stuck=act.filter(c=>c["SLA 剩餘"]!=null&&c["SLA 剩餘"]<0).length;
+  const rb=document.getElementById("renewBar");
+  rb.innerHTML=(S.renewals||[]).length?`<div class="renew-strip"><b>續約窗口</b>${S.renewals.map(r=>
+    `<span class="ri" onclick="openDrawer('${r.合約編號}')">${r.客戶} ${r.合約編號.slice(-3)} · ${r.剩餘天數<0?"已過期 "+(-r.剩餘天數)+" 天":"剩 "+r.剩餘天數+" 天"}</span>`).join("")}</div>`:"";
   document.getElementById("stats").innerHTML=
     `<div class="stat"><b>進行中合約</b><span>${act.length}</span></div>
      <div class="stat"><b>未收合計</b><span>${fmt(S.cashflow.未收合計)}</span></div>
      <div class="stat"><b>其中逾期</b><span class="${S.cashflow.其中逾期>0?"bad":""}">${fmt(S.cashflow.其中逾期)}</span></div>
-     <div class="stat"><b>逾期筆數</b><span class="${S.overdue.length>0?"bad":""}">${S.overdue.length}</span></div>`;
+     <div class="stat"><b>逾期筆數</b><span class="${S.overdue.length>0?"bad":""}">${S.overdue.length}</span></div>
+     <div class="stat"><b>卡關（超 SLA）</b><span class="${stuck>0?"bad":""}">${stuck}</span></div>`;
   // 團隊載量
   const by={};
   S.contracts.forEach(c=>{
@@ -378,13 +389,19 @@ function renderOverview(){
       }
     }
     tr.innerHTML=`<td class="mono">${c.合約編號}</td><td>${c.客戶}</td>
-      <td><span class="st ${stCls(c.狀態)}">${c.狀態} ${c.狀態名||""}</span></td>
+      <td><span class="st ${stCls(c.狀態)}">${c.狀態} ${c.狀態名||""}</span>${slaBadge(c)}</td>
       <td>${c.負責業務||"—"}</td><td class="mono">${c.期數||"—"}</td><td class="mono">${c.到期日||"—"}</td>
       <td class="amt">${fmt(c.金額)}</td><td>${btn}</td>
       <td><a class="nlink" href="${nURL(c.page_id)}" target="_blank" onclick="event.stopPropagation()">↗ Notion</a></td>`;
     tr.onclick=()=>openDrawer(c.合約編號);
     tb.appendChild(tr);
   });
+}
+function slaBadge(c){
+  if(c["SLA 剩餘"]==null){
+    return (c.卡關天數!=null&&c.卡關天數>0&&!["C6","C7","X1","X2","C5"].includes(c.狀態))?` <span class="slab">${c.卡關天數} 天</span>`:"";
+  }
+  return c["SLA 剩餘"]<0?` <span class="slab late">超時 ${-c["SLA 剩餘"]} 天</span>`:` <span class="slab">SLA 剩 ${c["SLA 剩餘"]} 天</span>`;
 }
 function toggleTeam(nm){teamFilter=teamFilter===nm?null:nm;renderAll();}
 
@@ -435,6 +452,7 @@ function openDrawer(cid,scroll=true){
       <div><span>客戶</span>${c.客戶}</div><div><span>負責業務</span>${c.負責業務||"—"}</div>
       <div><span>金額</span><span class="mono">${fmt(c.金額)}</span></div><div><span>期數</span><span class="mono">${c.期數||"—"}</span></div>
       <div><span>生效日</span><span class="mono">${c.生效日||"—"}</span></div><div><span>到期日</span><span class="mono">${c.到期日||"—"}</span></div>
+      <div><span>此狀態已</span><span class="mono">${c.卡關天數!=null?c.卡關天數+" 天":"—"}</span></div><div><span>SLA</span><span class="mono">${c["SLA 剩餘"]!=null?(c["SLA 剩餘"]<0?"超時 "+(-c["SLA 剩餘"])+" 天":"剩 "+c["SLA 剩餘"]+" 天"):"—"}</span></div>
     </div><div style="margin-top:10px"><a class="nlink" href="${nURL(c.page_id)}" target="_blank">↗ 在 Notion 開啟這張合約</a></div></div>
     <div class="dsec"><b class="lb">生命週期 — 目前 ${c.狀態} ${c.狀態名||""}</b>${track}</div>
     <div class="dsec"><b class="lb">動作</b><div class="actrow">${acts||'<span class="dnote">此視角無可用動作</span>'}</div></div>
@@ -710,6 +728,7 @@ async function sendComment(cid){
   await loadData();openDrawer(cid,false);
 }
 
+document.getElementById("showDone").onchange=()=>renderOverview();
 loadData().then(()=>ensureActor());
 </script>
 </body>

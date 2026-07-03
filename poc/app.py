@@ -60,8 +60,24 @@ _cache: dict = {"t": 0.0, "data": None}
 def _bootstrap_data(force: bool = False) -> dict:
     if not force and _cache["data"] and time.time() - _cache["t"] < 30:
         return _cache["data"]
+    _safe(cap.overdue_lazy_flag, 0)   # 過期未收自動標 P4（冪等、有變更才寫）
     contracts = cap.contract_rows()
     payments = cap.payment_rows()
+    # SLA 卡關計算（讀取時動態、免排程器）
+    from datetime import date as _d
+    for c in contracts:
+        sla = states.STATES.get(c["狀態"] or "", {}).get("sla_days")
+        entered = c.get("狀態進入日")
+        c["卡關天數"] = None
+        c["SLA 剩餘"] = None
+        if entered:
+            try:
+                days = (_d.today() - _d.fromisoformat(entered[:10])).days
+                c["卡關天數"] = days
+                if sla:
+                    c["SLA 剩餘"] = sla - days
+            except ValueError:
+                pass
     data = {
         "contracts": contracts,
         "payments": payments,
@@ -74,6 +90,7 @@ def _bootstrap_data(force: bool = False) -> dict:
         "quotes_ready": _safe(cap.quote_ready_list, []),
         "products": _safe(cap.product_list, []),
         "comments": _safe(cap.comment_list, []),
+        "renewals": _safe(cap.renewal_alerts, []),
         "order": states.ORDER,
         "synced_at": datetime.now().strftime("%H:%M:%S"),
     }

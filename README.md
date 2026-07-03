@@ -7,6 +7,8 @@
 **立項依據**: 2026-07-02 會議決策 — 正式立項、不納入 AI Raiser 計畫分散打造
 **團隊**: Nelsen Chen（發起）/ Philis Chen（流程）/ Allen Hung（主導搭建）/ Jaric Kuo（技術）/ Carol（訪談協調）+ 兩位 RD（待拉入）
 
+**POC 現況（2026-07-03）**：閉環全鏈可跑（建約 → 簽核推進 → 回簽自動排款 → 開票收款 → 守門結案 → 續約開新約）；串公司真實資料（客戶大名單 514、艦員名冊 45、已簽約報價單一鍵建約、產品目錄 8 項）；身份留痕（本人 vs 經助理）；合約留言同步 Notion；SLA 卡關與續約窗口自動提示。跑法見 `poc/README.md`。
+
 ---
 
 ## 核心理念：遊戲主機 + 卡帶
@@ -35,7 +37,8 @@
 | [docs/CARTRIDGE-SPEC.md](docs/CARTRIDGE-SPEC.md) | 卡帶規範 — 先鋒計畫接入標準 |
 | [docs/plans/task_plan.md](docs/plans/task_plan.md) | 跨階段任務計畫（接手先讀這個） |
 | [docs/research/](docs/research/) | 立項研究（repo / Allen 工具 / CLM 地景 / Notion 邊界 / 內部脈絡） |
-| [proposal/index.html](proposal/index.html) | 一頁式互動提案（給利害關係人看的版本） |
+| [proposal/index.html](proposal/index.html) | 一頁式互動提案（線上：bizpeak-flow-proposal.vercel.app） |
+| [poc/](poc/) | **可跑的系統雛形** — 1.0 介面＋1.5 聊天框＋2.0 MCP、線上：bizpeak-flow-app.vercel.app（需存取金鑰） |
 
 ## 相關連結
 
