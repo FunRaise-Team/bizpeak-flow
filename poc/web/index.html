@@ -374,6 +374,7 @@ const nURL=id=>"https://www.notion.so/"+(id||"").replace(/-/g,"");
 const canFin=()=>role==="all"||role==="finance";
 const canOps=()=>role!=="mgmt";
 
+(function(){const u=new URL(location.href);if(u.searchParams.has("key")){u.searchParams.delete("key");history.replaceState(null,"",u.pathname+(u.search||""));}})();
 async function loadData(){
   const r=await fetch("/api/bootstrap");S=await r.json();
   document.getElementById("sync").textContent="同步 Notion "+S.synced_at;

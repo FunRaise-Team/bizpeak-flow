@@ -11,3 +11,4 @@ dist/
 .claude/settings.local.json
 wip/image-gen/*.png
 docs/research-internal/
+.share-link

@@ -95,7 +95,7 @@ b1 = [
     callout([rt("一頁式互動提案（對外可分享）：", bold=True), rt(SITE, link=SITE),
              rt("　｜　協作程式庫："), rt("FunRaise-Team/bizpeak-flow", link=REPO), rt("（public、含完整規格文件與 POC）")], icon="🔗", color="gray_background"),
     callout([rt("線上體驗（點開即玩、內部分享用）：", bold=True),
-             rt("bizpeak-flow-app.vercel.app", link="https://bizpeak-flow-app.vercel.app/?key=d813f47353fa5571"),
+             rt("bizpeak-flow-app.vercel.app", link="https://bizpeak-flow-app.vercel.app"),
              rt(" — 合約總覽（詳情面板・生命週期）、收款、逾期、日曆、現金流、產品目錄、事件留痕、右下 AI 助理；已串公司客戶大名單（514 家）、報價系統（已簽約報價單一鍵建約）、產品目錄（建約自動帶建議價）；進站先選身份 — 本人操作與「經助理」代辦在留痕中分流、合約可留言並同步 Notion。資料層在 Notion（"),
              rt("資料層頁", link="https://www.notion.so/392b2192451581e5b756f414b4ac1980"),
              rt("）、每筆資料可從介面直開 Notion 原頁。")], icon="🚀", color="green_background"),

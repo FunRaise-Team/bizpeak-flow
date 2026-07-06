@@ -24,7 +24,25 @@ app = FastAPI(title="BizPeak Flow POC")
 WEB = Path(__file__).parent / "web"
 
 # ── 存取關卡（Rule 8：內部工具不裸奔）— 設 APP_ACCESS_KEY 才啟用；本機開發不擋 ──
+# 雙保險：OFFICE_IPS 名單內免金鑰（辦公室即開）、名單外需金鑰（行動/外部後門）
 APP_KEY = os.environ.get("APP_ACCESS_KEY", "")
+OFFICE_IPS = [x.strip() for x in os.environ.get("OFFICE_IPS", "").split(",") if x.strip()]
+
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    return (fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else ""))
+
+
+def _ip_allowed(ip: str) -> bool:
+    if not OFFICE_IPS or not ip:
+        return False
+    import ipaddress
+    try:
+        addr = ipaddress.ip_address(ip)
+        return any(addr in ipaddress.ip_network(c, strict=False) for c in OFFICE_IPS)
+    except ValueError:
+        return False
 
 
 @app.middleware("http")
@@ -33,15 +51,15 @@ async def access_gate(request: Request, call_next):
         return await call_next(request)
     supplied = (request.query_params.get("key", "") or request.cookies.get("bpf_key", "")
                 or request.headers.get("x-app-key", ""))
-    if supplied != APP_KEY:
+    if supplied != APP_KEY and not _ip_allowed(_client_ip(request)):
         if request.url.path.startswith("/api/"):
             return JSONResponse({"error": "未授權 — 請用完整分享連結重新開啟頁面"}, status_code=401)
         return HTMLResponse("<div style='font-family:sans-serif;padding:48px;color:#26261F'>"
                             "<h3>BizPeak Flow — 需要存取金鑰</h3><p>請使用完整的分享連結（含 key）開啟。</p></div>",
                             status_code=401)
     resp = await call_next(request)
-    if request.url.path == "/":
-        resp.set_cookie("bpf_key", APP_KEY, httponly=True, max_age=86400 * 30, samesite="lax")
+    if request.url.path == "/" and supplied == APP_KEY:
+        resp.set_cookie("bpf_key", APP_KEY, httponly=True, max_age=86400 * 30, samesite="lax", secure=True)
     return resp
 
 GEMINI_MODEL = "gemini-2.5-flash"
@@ -424,8 +442,9 @@ def _gemini(contents: list) -> dict:
             "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT")],
     }
     req = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={_gemini_key()}",
-        data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json", "x-goog-api-key": _gemini_key()})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
 
