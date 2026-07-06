@@ -54,8 +54,10 @@ async def access_gate(request: Request, call_next):
     if supplied != APP_KEY and not _ip_allowed(_client_ip(request)):
         if request.url.path.startswith("/api/"):
             return JSONResponse({"error": "未授權 — 請用完整分享連結重新開啟頁面"}, status_code=401)
-        return HTMLResponse("<div style='font-family:sans-serif;padding:48px;color:#26261F'>"
-                            "<h3>BizPeak Flow — 需要存取金鑰</h3><p>請使用完整的分享連結（含 key）開啟。</p></div>",
+        return HTMLResponse("<div style='font-family:sans-serif;padding:48px;color:#26261F;line-height:1.8'>"
+                            "<h3>BizPeak Flow — 限公司內部使用</h3>"
+                            "<p>在公司辦公室網路可直接開啟本頁。<br>"
+                            "外部或行動網路存取、請向 Nelsen 索取分享連結（含存取金鑰、開啟一次後 30 天內免重新輸入）。</p></div>",
                             status_code=401)
     resp = await call_next(request)
     if request.url.path == "/" and supplied == APP_KEY:
